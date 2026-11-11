@@ -34,6 +34,29 @@ services:
     depends_on:
       - nginx-server
 
+  # ==============================================================
+  # 3. ASISTENTE CHATOPS & AIOps (Backend Python / FastAPI)
+  # ==============================================================
+  chatops-app:
+    build:
+      context: ./app
+    container_name: goys-chatops
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    networks:
+      goys-net:
+        ipv4_address: 172.20.0.20
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./nginx/logs:/var/log/nginx
+      - ./app:/app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - nginx-server
+
 # ================================================================
 # DEFINICIÓN DE RED L2/L3 (DOCKER BRIDGE VIRTUAL)
 # ================================================================

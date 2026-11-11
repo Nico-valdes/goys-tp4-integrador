@@ -21,6 +21,8 @@ credentials*
 *.bak
 *.log
 *.rsc.bak
+__pycache__/
+*.pyc
 
 # Archivos personales / notas privadas
 *ROADMAP_PERSONAL*

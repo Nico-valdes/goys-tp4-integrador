@@ -53,6 +53,8 @@ El proyecto está diseñado para funcionar **100% OFFLINE** en la laptop del gru
 | 10/11/2026 | Asignación formal de roles para los 4 integrantes | Todos | ✅ Completado |
 | 10/11/2026 | Envío de propuesta técnica a la cátedra para validación | Grupo 6 | 🟡 En espera de feedback |
 | 11/11/2026 | Construcción de la topología virtual (`docker-compose.yml`), red bridge (`172.20.0.0/24`), servidor Nginx con logging forense y nodo atacante con scripts L3/L7 | Franco Pietrantuono | ✅ Completado |
+| 11/11/2026 | Desarrollo del backend de ChatOps (FastAPI), parser de telemetría de Nginx, gestor de firewall y comandos operativos (/status, /bloquear, /desbloquear, /reglas) | Nicolás Valdés | ✅ Completado |
+| 11/11/2026 | Integración del motor AIOps con LLM local (Ollama / qwen2.5:1.5b), prompt engineering para análisis forense de logs y flujo interactivo Human-in-the-Loop | Nicolás Valdés | ✅ Completado |
 
 ---
 
@@ -62,7 +64,9 @@ El proyecto está diseñado para funcionar **100% OFFLINE** en la laptop del gru
 - [x] Elegir modalidad (A — Proyecto de Desarrollo)
 - [x] Asignar roles a los 4 integrantes
 - [x] Construcción de la topología virtual (`docker-compose.yml`)
+- [x] Implementación del backend ChatOps y telemetría de red
+- [x] Conexión del motor AIOps con la API local de Ollama e interacción Human-in-the-Loop
 - [ ] Visto bueno de la cátedra (@ofalabel / @rodriguezemautn)
-- [ ] Implementación del backend ChatOps y conexión con la API local de Ollama
+- [ ] Ejecución de escenarios de ataque y captura de evidencias (Fase 5)
 - [ ] Redacción del borrador del documento técnico (5-7 págs) en `documento/`
 - [ ] Maquetación del póster A1 en `poster/`
