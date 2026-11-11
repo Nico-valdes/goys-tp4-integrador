@@ -21,3 +21,8 @@ credentials*
 *.bak
 *.log
 *.rsc.bak
+
+# Archivos personales / notas privadas
+*ROADMAP_PERSONAL*
+ROADMAP*.md
+notas-privadas/

@@ -8,10 +8,10 @@
 
 | Nombre | Rol en el grupo | Responsabilidad Principal |
 |--------|-----------------|---------------------------|
-| **Nicolás Valdés** | Coordinador / Arquitectura | Definición de ChatOps, formulación del problema y presentación |
-| **Facundo Otero** | Módulo de Inteligencia Artificial | Integración con Ollama, prompt engineering y análisis de incidentes |
-| **Ivan Vijandi** | Operaciones & Automatización | Backend en Python, recolección de telemetría y orquestación Docker |
-| **Franco Pietrantuono** | Infraestructura & Redes | Topología virtual en Docker, servidor Nginx y reglas de Firewall (iptables) |
+| **Nicolás Valdés** | Arquitectura & Backend ChatOps | Diseño general de la solución, backend en Python, integración con Ollama y orquestación de la mitigación |
+| **Franco Pietrantuono** | Infraestructura & Redes | Topología virtual en Docker, servidor Nginx, configuración de red L2/L3 y reglas de firewall (iptables) |
+| **Facundo Otero** | Seguridad & Análisis de Incidentes | Modelado de amenazas, ingeniería de prompts para análisis forense y scripts de prueba de ataques (DoS y fuerza bruta) |
+| **Ivan Vijandi** | Operaciones & Monitoreo | Interfaz web de usuario (WebUI), recolección de telemetría de contenedores y observabilidad de servicios |
 
 ---
 
@@ -52,6 +52,7 @@ El proyecto está diseñado para funcionar **100% OFFLINE** en la laptop del gru
 | 10/11/2026 | Definición de modalidad (A) y alcance del proyecto | Todos | ✅ Completado |
 | 10/11/2026 | Asignación formal de roles para los 4 integrantes | Todos | ✅ Completado |
 | 10/11/2026 | Envío de propuesta técnica a la cátedra para validación | Grupo 6 | 🟡 En espera de feedback |
+| 11/11/2026 | Construcción de la topología virtual (`docker-compose.yml`), red bridge (`172.20.0.0/24`), servidor Nginx con logging forense y nodo atacante con scripts L3/L7 | Franco Pietrantuono | ✅ Completado |
 
 ---
 
@@ -60,8 +61,8 @@ El proyecto está diseñado para funcionar **100% OFFLINE** en la laptop del gru
 - [x] Definir tema definitivo y alcance del proyecto
 - [x] Elegir modalidad (A — Proyecto de Desarrollo)
 - [x] Asignar roles a los 4 integrantes
+- [x] Construcción de la topología virtual (`docker-compose.yml`)
 - [ ] Visto bueno de la cátedra (@ofalabel / @rodriguezemautn)
-- [ ] Construcción de la topología virtual (`docker-compose.yml`)
 - [ ] Implementación del backend ChatOps y conexión con la API local de Ollama
 - [ ] Redacción del borrador del documento técnico (5-7 págs) en `documento/`
 - [ ] Maquetación del póster A1 en `poster/`
