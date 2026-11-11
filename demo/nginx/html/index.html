@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servidor Web Interno - GOYS UTN FR La Plata</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #0f172a;
+            color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .card {
+            background: #1e293b;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            max-width: 500px;
+            border: 1px solid #334155;
+            text-align: center;
+        }
+        .status-badge {
+            display: inline-block;
+            background: #10b981;
+            color: #022c22;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+        h1 { margin-top: 0; font-size: 1.5rem; color: #38bdf8; }
+        p { color: #94a3b8; line-height: 1.6; font-size: 0.95rem; }
+        .tech-info {
+            background: #0f172a;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            text-align: left;
+            margin-top: 1.5rem;
+            color: #cbd5e1;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <span class="status-badge">● ONLINE</span>
+        <h1>Servidor Web de Producción</h1>
+        <p>Servicio HTTP bajo monitoreo activo con AIOps y mitigación perimetral por ChatOps.</p>
+        <div class="tech-info">
+            <div><strong>IP Virtual:</strong> 172.20.0.10</div>
+            <div><strong>Segmento:</strong> 172.20.0.0/24 (Docker Bridge)</div>
+            <div><strong>Puerto:</strong> TCP 80</div>
+            <div><strong>Cátedra:</strong> GOYS - UTN FR La Plata</div>
+        </div>
+    </div>
+</body>
+</html>
+
