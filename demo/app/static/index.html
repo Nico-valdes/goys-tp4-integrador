@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GOYS — Plataforma ChatOps & AIOps (Feria de Redes)</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-symbol">G</div>
+            <div class="brand-text">GOYS Console</div>
+            <div class="brand-context">UTN FR La Plata · Grupo 6</div>
+        </div>
+        <div class="system-indicators">
+            <div id="sentinel-badge" class="indicator">
+                <span class="dot dot-green"></span>
+                <span id="sentinel-text">CENTINELA VIGILANDO</span>
+            </div>
+            <button class="btn-revoke" onclick="resetLab()" style="margin: 0 0.5rem; color: #94a3b8; font-size: 11px;">↺ Resetear Lab</button>
+            <div class="indicator tag-offline">
+                <span>100% OFFLINE</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="dashboard-grid">
+        <!-- COLUMNA IZQUIERDA: INFRAESTRUCTURA & TELEMETRÍA -->
+        <aside class="panel">
+            <div class="panel-header">
+                <span class="panel-title">Infraestructura Virtual</span>
+                <span id="refresh-time" style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);">--:--:--</span>
+            </div>
+            <div class="panel-content">
+                <span class="section-label">Nodos en Red Bridge (172.20.0.0/24)</span>
+                
+                <div class="node-group">
+                    <div class="node-card">
+                        <div class="node-title-row">
+                            <span class="node-name">Servidor Web (Nginx)</span>
+                            <span id="nginx-status" class="node-status">ONLINE</span>
+                        </div>
+                        <div class="node-meta">
+                            <span>172.20.0.10:80</span>
+                            <span id="nginx-latency">0.0 ms</span>
+                        </div>
+                    </div>
+
+                    <div class="node-card">
+                        <div class="node-title-row">
+                            <span class="node-name">Nodo Cliente / Atacante</span>
+                            <span id="attacker-status" class="node-status">ONLINE</span>
+                        </div>
+                        <div class="node-meta">
+                            <span>172.20.0.99</span>
+                            <span id="attacker-latency">0.0 ms</span>
+                        </div>
+                    </div>
+                </div>
+
+                <span class="section-label">Telemetría de Tráfico (En Vivo)</span>
+                <div class="metric-grid">
+                    <div class="metric-box">
+                        <span class="lbl">Total Requests</span>
+                        <span id="metric-total" class="val">0</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="lbl">Velocidad (RPS)</span>
+                        <span id="metric-rps" class="val" style="color: var(--accent-blue);">0.0</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="lbl">HTTP 200 OK</span>
+                        <span id="metric-200" class="val" style="color: var(--accent-emerald);">0</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="lbl">HTTP 401 / 403 / 404</span>
+                        <span id="metric-auth-err" class="val" style="color: var(--accent-crimson);">0</span>
+                    </div>
+                </div>
+
+                <span class="section-label">Acciones Operativas</span>
+                <div class="command-pills">
+                    <button class="btn-cmd" onclick="sendCommand('/analizar')" style="border-color: rgba(96, 165, 250, 0.4); color: #93c5fd;">$ /analizar — Inferencia AIOps</button>
+                    <button class="btn-cmd" onclick="sendCommand('/status')">$ /status — Diagnóstico de red</button>
+                    <button class="btn-cmd" onclick="sendCommand('/reglas')">$ /reglas — Políticas activas</button>
+                    <button class="btn-cmd" onclick="sendCommand('/logs')">$ /logs — Últimos registros</button>
+                    <button class="btn-cmd" onclick="blockIpDirect('172.20.0.99')" style="color: #fca5a5; border-color: rgba(239, 68, 68, 0.3);">$ /bloquear 172.20.0.99 — DROP</button>
+                    <button class="btn-cmd" onclick="resetLab()" style="color: #cbd5e1; border-color: rgba(255, 255, 255, 0.15);">$ /reset — Limpiar Lab a 0</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- COLUMNA CENTRAL: CONSOLA CHATOPS & AIOPS CON SCROLL INDEPENDIENTE -->
+        <section class="panel chat-panel">
+            <div class="panel-header">
+                <div>
+                    <span class="panel-title">Consola Operativa ChatOps</span>
+                </div>
+                <button class="btn-revoke" onclick="clearChat()">Limpiar pantalla</button>
+            </div>
+
+            <div id="chat-messages" class="chat-history">
+                <div class="chat-message msg-assistant">
+                    <div class="msg-meta">
+                        <span>AIOps Kernel Sentinel</span>
+                        <span>·</span>
+                        <span id="init-timestamp">00:00</span>
+                    </div>
+                    <div class="msg-bubble">
+                        <p><strong>Centinela de seguridad en vigilancia activa.</strong> Telemetría de la red <code>172.20.0.0/24</code> sincronizada.</p>
+                        <p>El motor Llama 3.2 generará reportes estructurados de incidente y recomendaciones de mitigación en tiempo real.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-wrapper">
+                <form id="chat-form" class="chat-form" onsubmit="handleUserSubmit(event)">
+                    <input type="text" id="user-input" class="chat-input" placeholder="Escribí un comando o consulta (/status, /analizar, /reset)..." autocomplete="off">
+                    <button type="submit" class="btn-send">Ejecutar</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- COLUMNA DERECHA: FIREWALL DE KERNEL (DOCKER-USER CHAIN) -->
+        <aside class="panel">
+            <div class="panel-header">
+                <span class="panel-title">Políticas de Kernel (iptables)</span>
+                <span id="rules-count-pill" style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);">0 DROP</span>
+            </div>
+            <div class="panel-content">
+                <span class="section-label">Filtrado Perimetral (DOCKER-USER)</span>
+                
+                <div id="firewall-rules-list" class="rules-container">
+                    <div class="empty-state">No se registran bloqueos activos.</div>
+                </div>
+
+                <div class="manual-action-card">
+                    <span class="section-label">Mitigación Manual Directa</span>
+                    <input type="text" id="manual-ip-input" class="input-tight" placeholder="Dirección IP (ej: 172.20.0.99)">
+                    <button class="btn-action-danger" onclick="blockManualIp()">Aplicar DROP en Firewall</button>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <script>
+        document.getElementById('init-timestamp').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        
+        let lastDisplayedMessage = "";
+        let isFetchingAlert = false;
+
+        async function fetchStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                
+                document.getElementById('refresh-time').innerText = new Date().toLocaleTimeString();
+
+                document.getElementById('nginx-status').innerText = data.nodes.nginx.status;
+                document.getElementById('nginx-latency').innerText = (data.nodes.nginx.latency_ms || 0) + ' ms';
+                
+                document.getElementById('attacker-status').innerText = data.nodes.attacker.status;
+                document.getElementById('attacker-latency').innerText = (data.nodes.attacker.latency_ms || 0) + ' ms';
+                
+                const tr = data.traffic;
+                document.getElementById('metric-total').innerText = tr.total_requests;
+                document.getElementById('metric-rps').innerText = (tr.rps || 0.0) + ' req/s';
+                document.getElementById('metric-200').innerText = tr.status_distribution['200_ok'];
+                document.getElementById('metric-auth-err').innerText = tr.status_distribution['401_unauthorized'] + tr.status_distribution['403_forbidden'] + tr.status_distribution['404_not_found'];
+            } catch (err) {
+                console.warn('Error al obtener estado:', err);
+            }
+        }
+
+        async function fetchRules() {
+            try {
+                const res = await fetch('/api/firewall');
+                const rules = await res.json();
+                const container = document.getElementById('firewall-rules-list');
+                const countPill = document.getElementById('rules-count-pill');
+                
+                countPill.innerText = rules.length + ' DROP';
+
+                if (rules.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No se registran bloqueos activos.</div>';
+                    return;
+                }
+                
+                container.innerHTML = rules.map(r => `
+                    <div class="rule-entry">
+                        <div class="rule-header-row">
+                            <span class="rule-ip-address">${r.ip}</span>
+                            <span class="rule-pill-drop">${r.action}</span>
+                        </div>
+                        <div class="rule-motive">${r.reason}</div>
+                        <div class="rule-actions-row">
+                            <span>${r.timestamp.split(' ')[1] || r.timestamp}</span>
+                            <button class="btn-revoke" onclick="unblockIp('${r.ip}')">Revocar regla</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.warn('Error al obtener reglas:', err);
+            }
+        }
+
+        async function checkProactiveAlerts() {
+            if (isFetchingAlert) return;
+            isFetchingAlert = true;
+
+            try {
+                const res = await fetch('/api/alerts');
+                const data = await res.json();
+                const sentinelBadge = document.getElementById('sentinel-badge');
+
+                if (data.has_alert) {
+                    sentinelBadge.innerHTML = '<span class="dot" style="background-color: var(--accent-crimson); box-shadow: 0 0 8px red;"></span><span style="color: var(--accent-crimson); font-weight: 700;">AMENAZA ACTIVA</span>';
+
+                    if (data.message && data.message !== lastDisplayedMessage) {
+                        lastDisplayedMessage = data.message;
+                        appendMessage('assistant', data.message, data.suggested_action);
+                    }
+                } else {
+                    sentinelBadge.innerHTML = '<span class="dot dot-green"></span><span>CENTINELA VIGILANDO</span>';
+                }
+            } catch (err) {
+                console.warn('Error en centinela:', err);
+            } finally {
+                isFetchingAlert = false;
+            }
+        }
+
+        async function blockIpDirect(ip) {
+            try {
+                const res = await fetch('/api/firewall/block', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ip: ip, reason: "Mitigación ejecutada desde consola" })
+                });
+                appendMessage('operator', `Comando ejecutado: bloquear ${ip}`);
+                appendMessage('assistant', `**Política aplicada en el kernel:** Tráfico descartado (DROP) para ${ip}.`);
+                fetchStatus();
+                fetchRules();
+            } catch (err) {
+                alert('Error al aplicar bloqueo en firewall.');
+            }
+        }
+
+        async function confirmHitlBlock(ip, btnElement) {
+            if (btnElement) {
+                btnElement.disabled = true;
+                btnElement.innerText = "Aplicando política...";
+            }
+            try {
+                const res = await fetch('/api/firewall/block', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ip: ip, reason: "Mitigación aprobada vía Human-in-the-Loop" })
+                });
+                
+                appendMessage('operator', `Aprobación de operador: Bloqueo DROP para ${ip}`);
+                appendMessage('assistant', `**Confirmación:** Regla inyectada en cadena DOCKER-USER. Paquetes desde ${ip} descartados en kernel.`);
+                lastDisplayedMessage = "";
+                
+                if (btnElement) {
+                    const box = btnElement.closest('.hitl-action-box');
+                    if (box) {
+                        box.innerHTML = '<span style="font-size: 11.5px; color: var(--accent-emerald); font-family: var(--font-mono);">✓ MITIGACIÓN ACTIVA (DROP APLICADO)</span>';
+                    }
+                }
+                fetchStatus();
+                fetchRules();
+            } catch (err) {
+                alert('Error al aplicar bloqueo.');
+                if (btnElement) btnElement.disabled = false;
+            }
+        }
+
+        function dismissHitl(btn) {
+            const parent = btn.closest('.hitl-action-box');
+            if (parent) {
+                parent.innerHTML = '<span style="font-size: 11px; color: var(--text-muted); font-style: italic;">Alerta descartada por el operador.</span>';
+            }
+        }
+
+        async function unblockIp(ip) {
+            try {
+                await fetch('/api/firewall/unblock', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ip: ip })
+                });
+                lastDisplayedMessage = "";
+                appendMessage('operator', `Comando ejecutado: desbloquear ${ip}`);
+                appendMessage('assistant', `**Política revocada:** Se ha removido el filtro DROP para ${ip}.`);
+                fetchStatus();
+                fetchRules();
+            } catch (err) {
+                alert('Error al desbloquear IP.');
+            }
+        }
+
+        async function resetLab() {
+            try {
+                const res = await fetch('/api/reset', { method: 'POST' });
+                lastDisplayedMessage = "";
+                clearChat();
+                appendMessage('assistant', 'Laboratorio reiniciado. Registros de Nginx vaciados (0 peticiones) y reglas de firewall eliminadas.');
+                fetchStatus();
+                fetchRules();
+            } catch (err) {
+                alert('Error al reiniciar el laboratorio.');
+            }
+        }
+
+        async function handleUserSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('user-input');
+            const message = input.value.trim();
+            if (!message) return;
+            
+            appendMessage('operator', message);
+            input.value = '';
+            
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message })
+                });
+                const data = await res.json();
+                appendMessage('assistant', data.reply, data.suggested_action);
+                fetchStatus();
+                fetchRules();
+            } catch (err) {
+                appendMessage('assistant', 'Error de enlace con el servicio ChatOps.');
+            }
+        }
+
+        function sendCommand(cmd) {
+            document.getElementById('user-input').value = cmd;
+            document.getElementById('chat-form').dispatchEvent(new Event('submit'));
+        }
+
+        function blockManualIp() {
+            const input = document.getElementById('manual-ip-input');
+            const ip = input.value.trim();
+            if (!ip) return;
+            blockIpDirect(ip);
+            input.value = '';
+        }
+
+        function appendMessage(sender, text, suggestedAction = null) {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            const isOp = sender === 'operator';
+            div.className = isOp ? 'chat-message msg-operator' : 'chat-message msg-assistant';
+            
+            const metaName = isOp ? 'Operador' : 'AIOps Kernel Sentinel';
+            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+            const formatted = text
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/`(.*?)`/g, '<code>$1</code>');
+
+            let actionHtml = '';
+            if (suggestedAction && suggestedAction.type === 'block') {
+                actionHtml = `
+                    <div class="hitl-action-box">
+                        <button class="btn-hitl-approve" onclick="confirmHitlBlock('${suggestedAction.ip}', this)">
+                            ${suggestedAction.label}
+                        </button>
+                        <button class="btn-hitl-dismiss" onclick="dismissHitl(this)">
+                            Descartar
+                        </button>
+                    </div>
+                `;
+            }
+
+            div.innerHTML = `
+                <div class="msg-meta">
+                    <span>${metaName}</span>
+                    <span>·</span>
+                    <span>${time}</span>
+                </div>
+                <div class="msg-bubble">
+                    ${formatted}
+                    ${actionHtml}
+                </div>
+            `;
+            
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function clearChat() {
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = '';
+        }
+
+        // Bucle periódico en tiempo real cada 2 segundos
+        fetchStatus();
+        fetchRules();
+        checkProactiveAlerts();
+        
+        setInterval(() => {
+            fetchStatus();
+            fetchRules();
+            checkProactiveAlerts();
+        }, 2000);
+    </script>
+</body>
+</html>
