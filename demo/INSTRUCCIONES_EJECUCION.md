@@ -67,47 +67,56 @@ Abrir el navegador web en:
 http://localhost:5000
 ```
 
-* El panel lateral izquierdo debe mostrar **ONLINE** para Nginx y el Nodo Atacante, y la etiqueta superior debe indicar **CENTINELA VIGILANDO**.
+* El panel lateral izquierdo debe mostrar **ONLINE** para Nginx y el Gateway, y la lista de orígenes en red aguardará el primer tráfico. La etiqueta superior indicará **CENTINELA VIGILANDO**.
 * En el panel central, el asistente confirmará la sincronización de la telemetría.
 
 ---
 
-## 4. Paso 4: Ejecución de Ensayos y Pruebas de Ataque
+## 4. Paso 4: Ejecución de Ensayos y Demostración Multi-Origen
 
-Abrir una segunda ventana de terminal para simular el tráfico malicioso desde el contenedor `goys-attacker`.
+Abrir una segunda ventana de terminal para interactuar con la red desde el simulador `goys-attacker`.
 
-### Ensayo A: Tráfico Legítimo y Conectividad Inicial
-Verifica que el atacante tiene conectividad L3 (ICMP ping) y L7 (HTTP GET 200) contra el servidor Nginx:
+### Ensayo A: Tráfico de Fondo Multi-Usuario Continuo (Simulación en Vivo)
+Simula un pool de 5 usuarios concurrentes navegando indefinidamente por el portal web desde IPs independientes (`172.20.0.51` a `172.20.0.55`) con navegadores comerciales (Chrome, Firefox, Safari, Edge, Android) a razón de ~1 petición por segundo con puertos efímeros dinámicos:
 ```bash
-docker exec -it goys-attacker bash /scripts/test_connectivity.sh
-```
-
----
-
-### Ensayo B: Ataque DoS Volumétrico (HTTP Flood)
-Genera una ráfaga concurrente de 150 peticiones HTTP a la raíz `/` con User-Agent de bot:
-```bash
-docker exec -it goys-attacker python3 /scripts/dos_attack.py
+docker exec -it goys-attacker python3 /scripts/background_traffic.py
 ```
 
 **Resultado esperado en la Consola Web:**
-1. El centinela conmuta a **AMENAZA ACTIVA**.
-2. Llama 3.2 emite un reporte clasificando el incidente como **CRÍTICA / DoS Volumétrico**.
-3. Se presenta el botón interactivo: `[ Aplicar política DROP para 172.20.0.99 ]`.
-4. Al hacer clic en el botón:
-   - Se inyecta la regla en la cadena `DOCKER-USER` del kernel Linux.
-   - En el panel derecho de iptables aparece la regla activa.
-   - Todo tráfico subsiguiente del atacante queda en estado `[BLOQUEADO / TIMEOUT]`.
+* En el panel lateral izquierdo, las 5 IPs de usuarios legítimos aparecen progresivamente con estado **PERMITIDO** en color verde.
+* La telemetría suma peticiones continuas (~1 req/s) sin disparar alertas ni consumir inferencias en la GPU: el centinela permanece en estado **CENTINELA VIGILANDO**.
+* Este script puede dejarse corriendo en una terminal en segundo plano durante toda la presentación.
 
 ---
 
-### Ensayo C: Escaneo de Directorios y Fuerza Bruta L7
-*(Si la IP 172.20.0.99 estaba bloqueada, presionar previamente "Revocar regla" en el panel de iptables).*
-
-Dispara 24 solicitudes dirigidas hacia rutas administrativas y archivos sensibles (`/admin`, `/.env`, `/backup.sql`) con User-Agents de `DirBuster`:
+### Ensayo B: Ataque DoS Volumétrico desde Origen Hostil (en Simultáneo)
+Mientras el tráfico legítimo de fondo sigue corriendo en la Terminal 1, abrir una **Terminal 2** y disparar una ráfaga concurrente de 150 peticiones HTTP a la raíz `/` desde la IP atacante (`172.20.0.88`):
 ```bash
-docker exec -it goys-attacker python3 /scripts/bruteforce.py
+docker exec -it goys-attacker python3 /scripts/dos_attack.py --ip 172.20.0.88
 ```
+
+**Resultado esperado en la Consola Web:**
+1. El centinela conmuta automáticamente a **AMENAZA ACTIVA**.
+2. Llama 3.2 discrimina entre el tráfico normal previo de `172.20.0.50` y la anomalía de `172.20.0.88`, clasificando el incidente como **CRÍTICA / DoS Volumétrico** y señalando como atacante a `172.20.0.88`.
+3. Se presenta la acción Human-in-the-Loop: `[ Aplicar política DROP para 172.20.0.88 ]`.
+4. Al hacer clic en el botón:
+   - Se inyecta la regla perimetral en la cadena `DOCKER-USER` del kernel Linux.
+   - En el panel de orígenes, el estado de `172.20.0.88` pasa inmediatamente a **BLOQUEADO (DROP)** en rojo.
+   - Si se reintenta el ataque, todas las peticiones desde `172.20.0.88` quedan en `[BLOQUEADO / TIMEOUT]`.
+5. **Verificación de Cero Falsos Positivos:** Al relanzar el cliente legítimo (`python3 /scripts/legitimate_traffic.py --ip 172.20.0.50`), sus peticiones continúan recibiendo **200 OK** sin interrupciones.
+
+---
+
+### Ensayo C: Escaneo de Directorios y Fuerza Bruta L7 desde Otra IP
+Dispara un barrido hacia rutas administrativas y archivos sensibles (`/admin`, `/.env`, `/backup.sql`) con User-Agents de `DirBuster` desde una tercera IP (`172.20.0.120`):
+```bash
+docker exec -it goys-attacker python3 /scripts/bruteforce.py --ip 172.20.0.120
+```
+
+**Resultado esperado en la Consola Web:**
+1. La telemetría detecta códigos `401 Unauthorized` y `404 Not Found`.
+2. Llama 3.2 analiza la ráfaga activa, deduce el origen `172.20.0.120` y clasifica el incidente como **ALTA / Escaneo de rutas sensibles y fuerza bruta**.
+3. Se ofrece la recomendación de mitigación específica para `172.20.0.120`.
 
 **Resultado esperado en la Consola Web:**
 1. La telemetría detecta múltiples códigos `401 Unauthorized` y `404 Not Found`.

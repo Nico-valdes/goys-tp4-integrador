@@ -49,14 +49,19 @@
 
                     <div class="node-card">
                         <div class="node-title-row">
-                            <span class="node-name">Nodo Cliente / Atacante</span>
-                            <span id="attacker-status" class="node-status">ONLINE</span>
+                            <span class="node-name">Gateway de Red</span>
+                            <span id="gateway-status" class="node-status">ONLINE</span>
                         </div>
                         <div class="node-meta">
-                            <span>172.20.0.99</span>
-                            <span id="attacker-latency">0.0 ms</span>
+                            <span>172.20.0.1</span>
+                            <span id="gateway-latency">0.0 ms</span>
                         </div>
                     </div>
+                </div>
+
+                <span class="section-label">Orígenes Detectados en Red</span>
+                <div id="active-sources-list" class="sources-list" style="display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1.25rem;">
+                    <div style="font-size: 11px; color: var(--text-muted); font-style: italic;">Aguardando tráfico de red...</div>
                 </div>
 
                 <span class="section-label">Telemetría de Tráfico (En Vivo)</span>
@@ -85,7 +90,7 @@
                     <button class="btn-cmd" onclick="sendCommand('/status')">$ /status — Diagnóstico de red</button>
                     <button class="btn-cmd" onclick="sendCommand('/reglas')">$ /reglas — Políticas activas</button>
                     <button class="btn-cmd" onclick="sendCommand('/logs')">$ /logs — Últimos registros</button>
-                    <button class="btn-cmd" onclick="blockIpDirect('172.20.0.99')" style="color: #fca5a5; border-color: rgba(239, 68, 68, 0.3);">$ /bloquear 172.20.0.99 — DROP</button>
+                    <button class="btn-cmd" onclick="sendCommand('/ayuda')">$ /ayuda — Guía de comandos</button>
                     <button class="btn-cmd" onclick="resetLab()" style="color: #cbd5e1; border-color: rgba(255, 255, 255, 0.15);">$ /reset — Limpiar Lab a 0</button>
                 </div>
             </div>
@@ -148,6 +153,7 @@
         document.getElementById('init-timestamp').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         
         let lastDisplayedMessage = "";
+        let lastSeenAlertId = null;
         let isFetchingAlert = false;
 
         async function fetchStatus() {
@@ -160,14 +166,40 @@
                 document.getElementById('nginx-status').innerText = data.nodes.nginx.status;
                 document.getElementById('nginx-latency').innerText = (data.nodes.nginx.latency_ms || 0) + ' ms';
                 
-                document.getElementById('attacker-status').innerText = data.nodes.attacker.status;
-                document.getElementById('attacker-latency').innerText = (data.nodes.attacker.latency_ms || 0) + ' ms';
+                if (data.nodes.gateway) {
+                    document.getElementById('gateway-status').innerText = data.nodes.gateway.status;
+                    document.getElementById('gateway-latency').innerText = (data.nodes.gateway.latency_ms || 0) + ' ms';
+                }
                 
                 const tr = data.traffic;
                 document.getElementById('metric-total').innerText = tr.total_requests;
                 document.getElementById('metric-rps').innerText = (tr.rps || 0.0) + ' req/s';
                 document.getElementById('metric-200').innerText = tr.status_distribution['200_ok'];
                 document.getElementById('metric-auth-err').innerText = tr.status_distribution['401_unauthorized'] + tr.status_distribution['403_forbidden'] + tr.status_distribution['404_not_found'];
+
+                // Renderizado dinámico de clientes y orígenes de tráfico detectados
+                const sourcesContainer = document.getElementById('active-sources-list');
+                if (sourcesContainer) {
+                    const ips = tr.top_ips || [];
+                    if (ips.length === 0) {
+                        sourcesContainer.innerHTML = '<div style="font-size: 11px; color: var(--text-muted); font-style: italic;">Aguardando tráfico de red...</div>';
+                    } else {
+                        sourcesContainer.innerHTML = ips.map(item => {
+                            const isBlocked = item.is_blocked;
+                            const badgeColor = isBlocked ? 'var(--accent-crimson)' : 'var(--accent-emerald)';
+                            const statusText = isBlocked ? 'BLOQUEADO' : 'PERMITIDO';
+                            return `
+                                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 5px 8px; border-radius: 4px; font-size: 11px;">
+                                    <div>
+                                        <span style="font-family: var(--font-mono); font-weight: 600; color: #f8fafc;">${item.ip}</span>
+                                        <span style="color: var(--text-muted); margin-left: 5px; font-size: 10px;">(${item.count} reqs)</span>
+                                    </div>
+                                    <span style="font-family: var(--font-mono); font-size: 9.5px; color: ${badgeColor}; font-weight: 700;">${statusText}</span>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                }
             } catch (err) {
                 console.warn('Error al obtener estado:', err);
             }
@@ -210,17 +242,20 @@
             isFetchingAlert = true;
 
             try {
-                const res = await fetch('/api/alerts');
+                const res = await fetch('/api/alerts?t=' + Date.now());
                 const data = await res.json();
                 const sentinelBadge = document.getElementById('sentinel-badge');
 
                 if (data.has_alert) {
                     sentinelBadge.innerHTML = '<span class="dot" style="background-color: var(--accent-crimson); box-shadow: 0 0 8px red;"></span><span style="color: var(--accent-crimson); font-weight: 700;">AMENAZA ACTIVA</span>';
 
-                    if (data.message && data.message !== lastDisplayedMessage) {
+                    if (data.message && (!lastSeenAlertId || data.alert_id !== lastSeenAlertId)) {
+                        lastSeenAlertId = data.alert_id || ("alert_" + Date.now());
                         lastDisplayedMessage = data.message;
                         appendMessage('assistant', data.message, data.suggested_action);
                     }
+                } else if (data.is_analyzing) {
+                    sentinelBadge.innerHTML = '<span class="dot" style="background-color: var(--accent-amber); box-shadow: 0 0 8px orange;"></span><span style="color: var(--accent-amber); font-weight: 700;">INFERENCIA EN CURSO...</span>';
                 } else {
                     sentinelBadge.innerHTML = '<span class="dot dot-green"></span><span>CENTINELA VIGILANDO</span>';
                 }
@@ -238,6 +273,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ip: ip, reason: "Mitigación ejecutada desde consola" })
                 });
+                lastSeenAlertId = null;
                 appendMessage('operator', `Comando ejecutado: bloquear ${ip}`);
                 appendMessage('assistant', `**Política aplicada en el kernel:** Tráfico descartado (DROP) para ${ip}.`);
                 fetchStatus();
@@ -262,6 +298,7 @@
                 appendMessage('operator', `Aprobación de operador: Bloqueo DROP para ${ip}`);
                 appendMessage('assistant', `**Confirmación:** Regla inyectada en cadena DOCKER-USER. Paquetes desde ${ip} descartados en kernel.`);
                 lastDisplayedMessage = "";
+                lastSeenAlertId = null;
                 
                 if (btnElement) {
                     const box = btnElement.closest('.hitl-action-box');
@@ -277,11 +314,16 @@
             }
         }
 
-        function dismissHitl(btn) {
+        async function dismissHitl(btn) {
+            lastDisplayedMessage = "";
+            lastSeenAlertId = null;
             const parent = btn.closest('.hitl-action-box');
             if (parent) {
                 parent.innerHTML = '<span style="font-size: 11px; color: var(--text-muted); font-style: italic;">Alerta descartada por el operador.</span>';
             }
+            try {
+                await fetch('/api/alerts/dismiss', { method: 'POST' });
+            } catch (e) {}
         }
 
         async function unblockIp(ip) {
@@ -292,6 +334,7 @@
                     body: JSON.stringify({ ip: ip })
                 });
                 lastDisplayedMessage = "";
+                lastSeenAlertId = null;
                 appendMessage('operator', `Comando ejecutado: desbloquear ${ip}`);
                 appendMessage('assistant', `**Política revocada:** Se ha removido el filtro DROP para ${ip}.`);
                 fetchStatus();
@@ -305,6 +348,7 @@
             try {
                 const res = await fetch('/api/reset', { method: 'POST' });
                 lastDisplayedMessage = "";
+                lastSeenAlertId = null;
                 clearChat();
                 appendMessage('assistant', 'Laboratorio reiniciado. Registros de Nginx vaciados (0 peticiones) y reglas de firewall eliminadas.');
                 fetchStatus();
@@ -396,6 +440,8 @@
         }
 
         function clearChat() {
+            lastDisplayedMessage = "";
+            currentPendingAlertIp = null;
             const container = document.getElementById('chat-messages');
             container.innerHTML = '';
         }
