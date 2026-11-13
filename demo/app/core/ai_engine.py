@@ -18,27 +18,31 @@ PREFERRED_MODELS = ["llama3.2:3b", "qwen2.5:3b", "qwen2.5:1.5b", "llama3.2:1b"]
 # Regex estricto de IPv4 para validación dinámica
 IPV4_REGEX = re.compile(r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b')
 
-SYSTEM_PROMPT = """Eres un motor de ciberseguridad y análisis de tráfico (AIOps / SOC) para servidores web.
-Tu función es clasificar la telemetría agregada de los registros de acceso y calificar el nivel de amenaza.
+SYSTEM_PROMPT = """Eres el analista de seguridad y AIOps del centro de operaciones (SOC) para servidores web.
+Tu función es interpretar la telemetría en vivo de Nginx, traducir de forma clara qué está ocurriendo a nivel de red y dar tu opinión y veredicto técnico.
 
 TAXONOMÍA DE SEVERIDAD:
-- CRÍTICA: DoS Volumétrico o denegación de servicio activa que degrade recursos. Requiere BLOQUEO INMEDIATO.
-- ALTA: Escaneo de directorios administrativos (/admin, /.env, /backup.sql) y fuerza bruta activa. Requiere BLOQUEO INMEDIATO.
-- MEDIA: Múltiples errores 404 de rutas aisladas sin herramientas automatizadas evidentes.
-- BAJA / INFORMATIVA: Tráfico regular de usuarios reales. Monitoreo pasivo.
+- CRÍTICA: DoS Volumétrico o denegación de servicio activa (inundación de peticiones HTTP, ráfagas masivas con bots como AttackBot, saturación de peticiones incluso con código 200 OK). Requiere BLOQUEO INMEDIATO.
+- ALTA: Escaneo de directorios administrativos (/admin, /.env, /backup.sql) y fuerza bruta activa (DirBuster, 401/404 reiterados). Requiere BLOQUEO INMEDIATO.
+- MEDIA: Múltiples errores 404 aislados de usuarios sin herramientas automatizadas evidentes. Monitoreo pasivo.
+- BAJA / INFORMATIVA: Tráfico regular de usuarios reales (navegadores Chrome, Firefox, bajo volumen < 30 peticiones, 0 errores de autenticación). MONITOREO PASIVO. NO BLOQUEAR.
 
-REGLAS DE FORMATO (Obligatorio respetar estos 5 encabezados):
-**Incidente:** [Vector identificado]
+REGLAS DE FORMATO (Obligatorio respetar estos 6 encabezados en negrita):
+**Incidente:** [Vector identificado o Tráfico Nominal de Usuarios]
 
 **Severidad:** [CRÍTICA | ALTA | MEDIA | BAJA]
 
-**Origen:** [IP atacante y User-Agent identificado]
+**Origen y Patrón:** [IP analizada, porcentaje de concentración y User-Agent]
 
-**Evidencia:** [Métricas, rutas sensibles atacadas y códigos HTTP observados]
+**Impacto en Infraestructura:** [Métricas reales: peticiones, bytes transferidos, diversidad de rutas y latencia del servidor]
+
+**Muestra Forense:** [Líneas reales de petición extraídas del log]
+
+**Evaluación de la IA:** [Tu opinión y dictamen técnico en 2 o 3 oraciones: explica qué busca este tráfico, si pone en riesgo la infraestructura y la justificación de tu decisión]
 
 **Acción Recomendada:** [BLOQUEO INMEDIATO (DROP) | MONITOREO PASIVO] [ACCION:BLOQUEAR:<IP>]
 
-Sé riguroso y conciso. No repitas tablas numéricas extensas."""
+Sé riguroso, técnico y directo. Usa exclusivamente los datos reales de la telemetría."""
 
 def get_active_ollama_url() -> Optional[str]:
     for url in OLLAMA_ENDPOINTS:
@@ -111,7 +115,7 @@ def extract_dynamic_target_ip(ai_text: str, digest: dict) -> Optional[str]:
 
     return None
 
-def analyze_traffic_with_ollama(logs: Optional[List[Dict]] = None, prompt_custom: Optional[str] = None) -> dict:
+def analyze_traffic_with_ollama(logs: Optional[List[Dict]] = None, prompt_custom: Optional[str] = None, target_ip: Optional[str] = None) -> dict:
     ai_state = check_ai_status()
     
     if not ai_state["online"]:
@@ -127,7 +131,7 @@ def analyze_traffic_with_ollama(logs: Optional[List[Dict]] = None, prompt_custom
     active_url = ai_state["endpoint"]
     model_name = ai_state["model"]
 
-    digest = telemetry.generate_telemetry_digest(150)
+    digest = telemetry.generate_telemetry_digest(2000, target_ip=target_ip)
     
     if digest.get("total_requests", 0) == 0:
         return {
@@ -139,11 +143,48 @@ def analyze_traffic_with_ollama(logs: Optional[List[Dict]] = None, prompt_custom
             "suggested_action": None
         }
 
-    telemetry_summary = f"""Telemetría del servidor web (Ráfaga Activa de {digest.get('recent_window_requests', digest['total_requests'])} peticiones | Histórico acumulado: {digest['total_requests']}):
-- IP dominante en ráfaga: {digest['top_ip']} ({digest['concentration_pct']}% con {digest['top_ip_count']} requests)
-- Distribución de estados HTTP en ráfaga: 200 OK={digest['status_distribution']['200_ok']}, 401/403={digest['status_distribution']['auth_errors_401_403']}, 404={digest['status_distribution']['not_found_404']}
+    top_ip = digest.get("top_ip", "127.0.0.1")
+    top_ip_count = digest.get("top_ip_count", 0)
+    concentration = digest.get("concentration_pct", 0.0)
+    auth_errors = digest["status_distribution"].get("auth_errors_401_403", 0)
+    not_found = digest["status_distribution"].get("not_found_404", 0)
+    ok_200 = digest["status_distribution"].get("200_ok", 0)
+    uas_str = " ".join(digest.get("top_user_agents", [])).lower()
+    has_bot_ua = any(b in uas_str for b in ["attackbot", "bot", "python", "curl", "dirbuster", "nikto", "sqlmap"])
+    has_sensitive_paths = len(digest.get("sensitive_paths_targeted", [])) > 0
+
+    # Clasificación determinista Capa 1 (Sensor SOC en Red):
+    if (auth_errors >= 3 or (not_found >= 5 and has_sensitive_paths) or has_sensitive_paths):
+        c1_diagnosis = f"ALERTA SOC: Escaneo activo de directorios y fuerza bruta L7 desde IP {top_ip} ({auth_errors} errores de autenticación/rutas críticas)."
+        c1_guidance = f"Clasificar como Severidad ALTA. Acción recomendada: BLOQUEO INMEDIATO (DROP) [ACCION:BLOQUEAR:{top_ip}]."
+    elif (has_bot_ua and top_ip_count >= 20) or (top_ip_count >= 40 and concentration >= 45.0):
+        c1_diagnosis = f"ALERTA SOC: Ataque DoS Volumétrico (HTTP Flood) desde IP {top_ip} ({top_ip_count} peticiones masivas, {concentration}% del tráfico activo)."
+        c1_guidance = f"Clasificar como Severidad CRÍTICA. Acción recomendada: BLOQUEO INMEDIATO (DROP) [ACCION:BLOQUEAR:{top_ip}]."
+    elif auth_errors == 0 and not has_sensitive_paths and not has_bot_ua and concentration < 45.0:
+        c1_diagnosis = f"TELEMETRÍA NOMINAL: Navegación estándar de usuario legítimo desde IP {top_ip} (navegadores comerciales, bajo impacto en red, sin patrones hostiles)."
+        c1_guidance = "Clasificar como Severidad BAJA. Incidente: Tráfico Nominal de Usuarios. Acción recomendada: MONITOREO PASIVO. NO BLOQUEAR."
+    else:
+        c1_diagnosis = f"EVALUACIÓN HEURÍSTICA: Tráfico registrado desde {top_ip} con volumen moderado ({top_ip_count} reqs)."
+        c1_guidance = "Analizar según taxonomía y determinar si amerita mitigación."
+
+    ping_res = telemetry.ping_host("172.20.0.10")
+    latency_ms = ping_res.get("latency_ms", 1.5)
+    samples_formatted = "\n".join([f"  ● {s}" for s in digest.get("samples", [])]) or "  ● Ninguna registrada"
+
+    telemetry_summary = f"""Telemetría del servidor web Nginx (Ráfaga Activa de {top_ip_count} peticiones del origen {top_ip} | Histórico acumulado: {digest['total_requests']}):
+- Origen evaluado: {top_ip} ({digest['concentration_pct']}% del tráfico activo con {top_ip_count} peticiones registradas)
+- Distribución de estados HTTP: 200 OK={digest['status_distribution']['200_ok']}, 401/403={digest['status_distribution']['auth_errors_401_403']}, 404={digest['status_distribution']['not_found_404']}, 5xx={digest['status_distribution'].get('server_errors_5xx', 0)}
+- Diversidad de rutas: {digest.get('unique_paths_count', 1)} ruta(s) distinta(s). Rutas sensibles: {', '.join(digest['sensitive_paths_targeted']) or 'Ninguna'}
+- Carga de datos: {round(digest.get('total_bytes', 0) / 1024, 1)} KB transferidos | Tiempo medio de respuesta Nginx: {digest.get('avg_response_time_ms', 0.0)} ms
+- Latencia actual del servidor Nginx: {latency_ms} ms (Estado: {ping_res.get('status', 'ONLINE')})
 - User-Agents en ráfaga: {', '.join(digest['top_user_agents'])}
-- Rutas sensibles bajo prueba en ráfaga: {', '.join(digest['sensitive_paths_targeted']) or 'Ninguna detectada'}
+
+Muestra de peticiones reales en log:
+{samples_formatted}
+
+[Diagnóstico Perimétrico Capa 1 - Heurística]:
+{c1_diagnosis}
+Guía de clasificación: {c1_guidance}
 """
 
     user_query = prompt_custom or "Analizar la telemetría, clasificar la severidad del tráfico y determinar la acción requerida."
@@ -160,35 +201,43 @@ Instrucción del operador: {user_query}
         "stream": False,
         "options": {
             "temperature": 0.1,
-            "num_predict": 300
+            "num_predict": 550
         }
     }
 
     start_time = time.time()
     try:
-        response = requests.post(f"{active_url}/api/generate", json=payload, timeout=25)
+        response = requests.post(f"{active_url}/api/generate", json=payload, timeout=60)
         elapsed_ms = round((time.time() - start_time) * 1000, 1)
 
         if response.status_code == 200:
             ai_text = response.json().get("response", "").strip()
             
             # Normalizar encabezados en negrita
-            for header in ["Incidente:", "Severidad:", "Origen:", "Evidencia:", "Acción Recomendada:", "Mitigación:"]:
+            for header in ["Incidente:", "Severidad:", "Origen y Patrón:", "Origen:", "Impacto en Infraestructura:", "Muestra Forense:", "Evaluación de la IA:", "Acción Recomendada:", "Mitigación:"]:
                 if header in ai_text and f"**{header}**" not in ai_text:
                     ai_text = ai_text.replace(header, f"**{header}**")
 
             # Extracción 100% DINÁMICA de la IP objetivo
             target_ip = extract_dynamic_target_ip(ai_text, digest)
+            if not target_ip:
+                target_ip = digest.get("top_ip")
             
             # Evaluar si requiere acción de bloqueo según la respuesta del LLM
-            is_critical = any(sev in ai_text.upper() for sev in ["CRÍTICA", "CRITICA", "ALTA"]) or \
-                          any(w in ai_text.lower() for w in ["bloqueo inmediato", "drop", "dos", "escaneo", "fuerza bruta"])
+            text_upper = ai_text.upper()
+            text_lower = ai_text.lower()
+            
+            is_explicit_low = any(k in text_upper for k in ["SEVERIDAD: BAJA", "SEVERIDAD:** BAJA", "MONITOREO PASIVO", "TRÁFICO NOMINAL", "TRAFICO NOMINAL", "NO BLOQUEAR"])
+            is_critical_or_high = not is_explicit_low and (
+                any(k in text_upper for k in ["CRÍTICA", "CRITICA", "ALTA", "BLOQUEO INMEDIATO", "DROP", "ACCION:BLOQUEAR"]) or
+                any(k in text_lower for k in ["bloqueo inmediato", "aplicar drop", "ataque dos", "flood", "fuerza bruta"])
+            )
 
             # Limpiar token crudo del texto final
             ai_text = re.sub(r"\[ACCION:BLOQUEAR:[^\]]+\]", "", ai_text).strip()
 
             suggested_action = None
-            if is_critical and target_ip:
+            if is_critical_or_high and target_ip and target_ip not in ["127.0.0.1", "172.20.0.10", "172.20.0.1"]:
                 suggested_action = {
                     "type": "block",
                     "ip": target_ip,
@@ -222,7 +271,7 @@ Instrucción del operador: {user_query}
         "suggested_action": None
     }
 
-def chat_with_assistant(message: str) -> dict:
+def chat_with_assistant(message: str, context: Optional[str] = None) -> dict:
     """
     Modo conversacional general para ChatOps. Responde dudas técnicas del operador
     sobre la infraestructura, iptables, Docker o redes sin imponer la plantilla de incidente.
@@ -240,16 +289,20 @@ def chat_with_assistant(message: str) -> dict:
 
     chat_system = (
         "Eres el Asistente Operativo ChatOps de la plataforma GOYS (UTN FR La Plata).\n"
-        "Asistes al operador de red respondiendo consultas técnicas sobre la topología (172.20.0.0/24),\n"
-        "servidor Nginx (172.20.0.10), nodo atacante (172.20.0.99), firewall iptables (cadena DOCKER-USER) y protocolos L2/L3/L7.\n"
+        "Asistes al operador de red respondiendo consultas técnicas sobre la topología de red virtual (172.20.0.0/24),\n"
+        "servidor Nginx (172.20.0.10), firewall iptables (cadena DOCKER-USER en Netfilter), Docker y protocolos L2/L3/L7.\n"
         "Responde de forma concisa, técnica y directa, sin emojis ni formalismos innecesarios.\n"
-        "Si te saludan o te hacen una pregunta general, responde naturalmente como asistente técnico sin generar plantillas de incidentes."
+        "Si te saludan o te hacen una pregunta general o técnica, responde naturalmente sin generar plantillas de incidentes."
     )
+
+    full_prompt = message
+    if context:
+        full_prompt = f"Contexto operativo en vivo de la red:\n{context}\n\nConsulta del operador:\n{message}"
 
     payload = {
         "model": model_name,
         "system": chat_system,
-        "prompt": message,
+        "prompt": full_prompt,
         "stream": False,
         "options": {
             "temperature": 0.3,
@@ -258,7 +311,7 @@ def chat_with_assistant(message: str) -> dict:
     }
 
     try:
-        response = requests.post(f"{active_url}/api/generate", json=payload, timeout=20)
+        response = requests.post(f"{active_url}/api/generate", json=payload, timeout=60)
         if response.status_code == 200:
             text = response.json().get("response", "").strip()
             return {

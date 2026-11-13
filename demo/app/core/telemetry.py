@@ -4,6 +4,7 @@ import time
 import subprocess
 from collections import Counter
 from datetime import datetime
+from typing import Optional, List, Dict
 
 LOG_PATHS = [
     "/var/log/nginx/access.log",
@@ -124,12 +125,12 @@ def get_traffic_metrics(window_lines: int = 100000) -> dict:
         "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
 
-def generate_telemetry_digest(window_lines: int = 150) -> dict:
+def generate_telemetry_digest(window_lines: int = 2000, target_ip: Optional[str] = None) -> dict:
     """
     Arquitectura en Dos Capas (Two-Tier AIOps):
-    Analiza la ventana de observación activa (ráfaga reciente) distinguiendo
-    entre escaneo activo / fuerza bruta y ataques volumétricos DoS,
-    reportando métricas agregadas al LLM para inferencia precisa en milisegundos.
+    Analiza la ventana de observación activa aislando estrictamente las métricas
+    por dirección IP para evitar contaminación cruzada de firmas entre atacantes
+    y clientes legítimos.
     """
     all_logs = parse_logs(100000)
     total_accumulated = len(all_logs)
@@ -145,57 +146,70 @@ def generate_telemetry_digest(window_lines: int = 150) -> dict:
             "sensitive_paths_targeted": []
         }
 
-    # Identificar la naturaleza de la actividad reciente examinando los últimos 30 eventos
-    last_30 = all_logs[-30:] if total_accumulated >= 30 else all_logs
-    last_30_errors = sum(1 for l in last_30 if l["status"] in [401, 403, 404])
-
-    if last_30_errors >= 3:
-        # La ráfaga activa es de escaneo / autenticación fallida
-        active_logs = [l for l in last_30 if l["status"] in [401, 403, 404] or any(k in l["request"].lower() for k in ["admin", ".env", "backup", "secret", "login", "sql"])]
-        if not active_logs:
-            active_logs = last_30
-    else:
-        # La ráfaga activa es volumétrica (DoS) o navegación continua
-        active_logs = all_logs[-150:] if total_accumulated > 150 else all_logs
-
+    # Ventana de observación activa (últimos logs acumulados)
+    active_logs = all_logs[-window_lines:] if total_accumulated > window_lines else all_logs
     recent_total = len(active_logs)
-    ip_counter = Counter([l["ip"] for l in active_logs])
-    status_counter = Counter([l["status"] for l in active_logs])
-    ua_counter = Counter([l["user_agent"] for l in active_logs])
-    path_counter = Counter([l["request"] for l in active_logs])
 
-    top_ip, top_ip_count = ip_counter.most_common(1)[0]
-    concentration_pct = round((top_ip_count / recent_total) * 100, 1)
+    # Identificar la IP objetivo: si no fue provista, buscar la IP más sospechosa o dominante
+    if not target_ip:
+        error_ips = Counter([l["ip"] for l in active_logs if l["status"] in [401, 403, 404]])
+        if error_ips and error_ips.most_common(1)[0][1] >= 3:
+            target_ip = error_ips.most_common(1)[0][0]
+        else:
+            ip_counter = Counter([l["ip"] for l in active_logs])
+            target_ip, _ = ip_counter.most_common(1)[0]
+
+    # Filtrar peticiones ESPECÍFICAS de la IP evaluada para evitar contaminación cruzada
+    target_logs = [l for l in active_logs if l["ip"] == target_ip]
+    if not target_logs:
+        target_logs = [l for l in all_logs if l["ip"] == target_ip]
+    
+    top_ip_count = len(target_logs)
+    concentration_pct = round((top_ip_count / recent_total) * 100, 1) if recent_total > 0 else 0
+
+    status_counter = Counter([l["status"] for l in target_logs])
+    ua_counter = Counter([l["user_agent"] for l in target_logs])
+    path_counter = Counter([l["request"] for l in target_logs])
 
     auth_errors = status_counter.get(401, 0) + status_counter.get(403, 0)
     not_found = status_counter.get(404, 0)
 
-    # Rutas críticas detectadas en la ventana reciente
+    # Rutas críticas detectadas ÚNICAMENTE en la IP evaluada
     sensitive_keywords = ["admin", ".env", "backup", "secret", "login", "sql"]
     sensitive_paths = [
         path for path, _ in path_counter.most_common(10)
         if any(k in path.lower() for k in sensitive_keywords)
     ]
 
-    # Top User-Agents en la ventana reciente
+    # Top User-Agents ÚNICAMENTE de la IP evaluada
     top_uas = [f"{ua} ({cnt}x)" for ua, cnt in ua_counter.most_common(3)]
 
-    # Muestra de eventos de la ráfaga activa
+    # Métricas adicionales de impacto y diversidad de rutas
+    unique_paths_count = len(path_counter)
+    total_bytes = sum(l.get("bytes", 0) for l in target_logs)
+    server_errors_5xx = sum(1 for l in target_logs if l.get("status", 0) >= 500)
+    avg_rt_ms = round((sum(l.get("response_time", 0.0) for l in target_logs) / max(top_ip_count, 1)) * 1000, 2)
+
+    # Muestra de eventos reales de la IP para evidencia forense
     samples = [
-        f"{l['ip']} - \"{l['request']}\" {l['status']} UA: \"{l['user_agent']}\""
-        for l in active_logs[-3:]
+        f"{l['ip']} - \"{l['request']}\" [{l['status']}] (rt={l.get('response_time', 0.0)}s)"
+        for l in target_logs[-2:]
     ]
 
     return {
         "total_requests": total_accumulated,
         "recent_window_requests": recent_total,
-        "top_ip": top_ip,
+        "top_ip": target_ip,
         "top_ip_count": top_ip_count,
         "concentration_pct": concentration_pct,
+        "unique_paths_count": unique_paths_count,
+        "total_bytes": total_bytes,
+        "avg_response_time_ms": avg_rt_ms,
         "status_distribution": {
             "200_ok": status_counter.get(200, 0),
             "auth_errors_401_403": auth_errors,
-            "not_found_404": not_found
+            "not_found_404": not_found,
+            "server_errors_5xx": server_errors_5xx
         },
         "top_user_agents": top_uas,
         "sensitive_paths_targeted": sensitive_paths,

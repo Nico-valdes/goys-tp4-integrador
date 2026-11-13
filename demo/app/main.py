@@ -26,14 +26,23 @@ class UnblockRequest(BaseModel):
 
 _last_ai_analysis_timestamp = 0.0
 _is_analyzing = False
-_active_alert = None
-_last_analyzed_fingerprint = ""
+_current_analyzing_ip = None
+_active_alerts_by_ip = {}
+_pending_alert_queue = []
+_last_analyzed_total_requests = 0
+_last_analyzed_by_ip = {}
 
 @app.get("/api/status")
 def get_status():
     ping_nginx = telemetry.ping_host("172.20.0.10")
-    ping_attacker = telemetry.ping_host("172.20.0.99")
+    ping_gateway = telemetry.ping_host("172.20.0.1")
     traffic = telemetry.get_traffic_metrics(50000)
+    
+    # Enriquecer orígenes detectados con estado de firewall
+    for item in traffic.get("top_ips", []):
+        item["is_blocked"] = firewall.is_blocked(item["ip"])
+        item["status"] = "BLOQUEADO" if item["is_blocked"] else "PERMITIDO"
+
     blocked_count = len(firewall.list_rules())
     ai_status = ai_engine.check_ai_status()
     
@@ -41,7 +50,7 @@ def get_status():
         "status": "healthy",
         "nodes": {
             "nginx": ping_nginx,
-            "attacker": ping_attacker
+            "gateway": ping_gateway
         },
         "traffic": traffic,
         "ai": ai_status,
@@ -58,33 +67,44 @@ def get_firewall_rules():
 
 @app.post("/api/firewall/block")
 def apply_block(req: BlockRequest):
-    global _active_alert
+    global _active_alerts_by_ip, _pending_alert_queue
     result = firewall.block_ip(req.ip, req.reason or "Mitigación aprobada vía Human-in-the-Loop")
-    _active_alert = None
+    _active_alerts_by_ip.pop(req.ip, None)
+    _pending_alert_queue = [a for a in _pending_alert_queue if a.get("ip") != req.ip]
     if not result["success"]:
         raise HTTPException(status_code=400, detail=result["message"])
     return result
 
 @app.post("/api/firewall/unblock")
 def remove_block(req: UnblockRequest):
-    global _active_alert, _last_analyzed_fingerprint
+    global _active_alerts_by_ip, _pending_alert_queue, _last_analyzed_total_requests, _last_analyzed_by_ip
     result = firewall.unblock_ip(req.ip)
-    _active_alert = None
-    _last_analyzed_fingerprint = ""
+    _active_alerts_by_ip.pop(req.ip, None)
+    _pending_alert_queue = [a for a in _pending_alert_queue if a.get("ip") != req.ip]
+    _last_analyzed_total_requests = 0
+    _last_analyzed_by_ip.pop(req.ip, None)
     if not result["success"]:
         raise HTTPException(status_code=400, detail=result["message"])
     return result
 
 @app.post("/api/reset")
 def reset_lab():
-    global _active_alert, _last_ai_analysis_timestamp, _last_analyzed_fingerprint
+    global _active_alerts_by_ip, _pending_alert_queue, _last_ai_analysis_timestamp, _last_analyzed_total_requests, _last_analyzed_by_ip
     telemetry.clear_logs()
-    for ip in list(firewall.BLOCKED_IPS.keys()):
-        firewall.unblock_ip(ip)
-    _active_alert = None
+    firewall.flush_all_rules()
+    _active_alerts_by_ip.clear()
+    _pending_alert_queue.clear()
     _last_ai_analysis_timestamp = 0.0
-    _last_analyzed_fingerprint = ""
+    _last_analyzed_total_requests = 0
+    _last_analyzed_by_ip.clear()
     return {"success": True, "message": "Laboratorio reseteado. Logs en 0 y reglas de firewall restablecidas."}
+
+@app.post("/api/alerts/dismiss")
+def dismiss_active_alert():
+    global _active_alerts_by_ip, _pending_alert_queue
+    _active_alerts_by_ip.clear()
+    _pending_alert_queue.clear()
+    return {"success": True, "message": "Alertas descartadas."}
 
 @app.post("/api/chat")
 def handle_chat(req: ChatRequest):
@@ -93,74 +113,146 @@ def handle_chat(req: ChatRequest):
 
 @app.get("/api/alerts")
 def check_proactive_alerts():
-    global _last_ai_analysis_timestamp, _is_analyzing, _active_alert, _last_analyzed_fingerprint
+    global _last_ai_analysis_timestamp, _is_analyzing, _current_analyzing_ip
+    global _active_alerts_by_ip, _pending_alert_queue, _last_analyzed_total_requests, _last_analyzed_by_ip
 
-    recent_logs = telemetry.parse_logs(150)
+    # 1. Limpiar alertas de IPs que ya hayan sido bloqueadas en el firewall
+    for ip in list(_active_alerts_by_ip.keys()):
+        if firewall.is_blocked(ip):
+            del _active_alerts_by_ip[ip]
+
+    # 2. Si hay una nueva alerta en cola pendiente de entrega al frontend, entregarla primero
+    if _pending_alert_queue:
+        next_alert = _pending_alert_queue.pop(0)
+        return next_alert
+
+    # 3. Si actualmente se está ejecutando una inferencia de IA, reportar estado activo
+    if _is_analyzing:
+        return {"has_alert": False, "is_analyzing": True, "analyzing_ip": _current_analyzing_ip or "tráfico anómalo"}
+
+    recent_logs = telemetry.parse_logs(2000)
     if not recent_logs:
+        if _active_alerts_by_ip:
+            last_ip = list(_active_alerts_by_ip.keys())[-1]
+            return _active_alerts_by_ip[last_ip]
         return {"has_alert": False}
 
-    last_30 = recent_logs[-30:] if len(recent_logs) >= 30 else recent_logs
-    recent_auth_errors = sum(1 for l in last_30 if l["status"] in [401, 403, 404])
-    recent_200 = sum(1 for l in recent_logs if l["status"] == 200)
+    # Descartar tráfico de orígenes que ya están mitigados en el firewall de kernel
+    unblocked_logs = [l for l in recent_logs if not firewall.is_blocked(l["ip"])]
+    if not unblocked_logs:
+        if _active_alerts_by_ip:
+            last_ip = list(_active_alerts_by_ip.keys())[-1]
+            return _active_alerts_by_ip[last_ip]
+        return {"has_alert": False}
+
+    # Evaluar actividad en la ventana reciente activa (últimas 300 peticiones)
+    recent_active_window = unblocked_logs[-300:] if len(unblocked_logs) >= 300 else unblocked_logs
+    if not recent_active_window:
+        if _active_alerts_by_ip:
+            last_ip = list(_active_alerts_by_ip.keys())[-1]
+            return _active_alerts_by_ip[last_ip]
+        return {"has_alert": False}
 
     from collections import Counter
-    recent_ips = Counter([l["ip"] for l in recent_logs])
-    if not recent_ips:
-        return {"has_alert": False}
-    detected_ip, recent_count = recent_ips.most_common(1)[0]
-
-    # Si la IP principal ya está bloqueada en firewall, no emitir alerta
-    if firewall.is_blocked(detected_ip):
-        _active_alert = None
-        return {"has_alert": False}
-
-    is_suspicious = (recent_count >= 15 or recent_auth_errors >= 3)
-    if not is_suspicious:
-        return {"has_alert": False}
-
     now = time.time()
-    is_scan = (recent_auth_errors >= 3)
-    is_dos = (recent_200 >= 30 and not is_scan)
-    attack_type = "scan" if is_scan else ("dos" if is_dos else "unknown")
-    traffic_fingerprint = f"{detected_ip}:{attack_type}"
-    fingerprint_changed = (traffic_fingerprint != _last_analyzed_fingerprint)
-    cooldown_passed = (now - _last_ai_analysis_timestamp >= 4.0)
+    detected_ip = None
+    is_suspicious = False
+    recent_count = 0
+    recent_auth_errors = 0
 
-    if (fingerprint_changed and cooldown_passed and not _is_analyzing):
+    # A. Buscar orígenes con errores de autenticación/escaneo pendientes de alertar
+    error_ips = Counter([l["ip"] for l in recent_active_window if l["status"] in [401, 403, 404]])
+    for ip, err_count in error_ips.most_common(5):
+        if not firewall.is_blocked(ip) and ip not in _active_alerts_by_ip:
+            if err_count >= 3:
+                if now - _last_analyzed_by_ip.get(ip, 0.0) >= 20.0:
+                    detected_ip = ip
+                    ip_logs = [l for l in recent_active_window if l["ip"] == detected_ip]
+                    recent_count = len(ip_logs)
+                    recent_auth_errors = err_count
+                    is_suspicious = True
+                    break
+
+    # B. Si no hay escaneos nuevos, buscar ráfagas DoS volumétricas o User-Agent bot pendientes de alertar
+    if not is_suspicious:
+        ip_counts = Counter([l["ip"] for l in recent_active_window])
+        for ip, count in ip_counts.most_common(5):
+            if not firewall.is_blocked(ip) and ip not in _active_alerts_by_ip:
+                logs_for_ip = [l for l in recent_active_window if l["ip"] == ip]
+                uas = " ".join([l.get("user_agent", "") for l in logs_for_ip]).lower()
+                has_bot = any(b in uas for b in ["attackbot", "bot", "python", "curl", "dirbuster", "nikto", "sqlmap"])
+                ratio = count / len(recent_active_window)
+
+                if (has_bot and count >= 15) or (count >= 30 and ratio >= 0.40):
+                    if now - _last_analyzed_by_ip.get(ip, 0.0) >= 20.0:
+                        detected_ip = ip
+                        recent_count = count
+                        recent_auth_errors = sum(1 for l in logs_for_ip if l["status"] in [401, 403, 404])
+                        is_suspicious = True
+                        break
+
+    if not is_suspicious or not detected_ip:
+        if _active_alerts_by_ip:
+            last_ip = list(_active_alerts_by_ip.keys())[-1]
+            return _active_alerts_by_ip[last_ip]
+        return {"has_alert": False}
+
+    raw_logs = telemetry.read_raw_logs(100000)
+    total_requests = len(raw_logs)
+
+    new_traffic_arrived = (abs(total_requests - _last_analyzed_total_requests) >= 10)
+    cooldown_passed = (now - _last_ai_analysis_timestamp >= 3.0)
+
+    if (new_traffic_arrived and cooldown_passed and not _is_analyzing):
         _is_analyzing = True
+        _current_analyzing_ip = detected_ip
         try:
-            ai_res = ai_engine.analyze_traffic_with_ollama()
+            ai_res = ai_engine.analyze_traffic_with_ollama(target_ip=detected_ip)
             _last_ai_analysis_timestamp = time.time()
-            _last_analyzed_fingerprint = traffic_fingerprint
+            _last_analyzed_total_requests = total_requests
+            _last_analyzed_by_ip[detected_ip] = time.time()
 
-            # Extraemos la IP dinámicamente resuelta por la IA o la telemetría
-            suggested_action = ai_res.get("suggested_action")
-            target_ip = (suggested_action.get("ip") if suggested_action else detected_ip)
-
-            # Si la IP resultante ya fue mitigada, omitir
-            if firewall.is_blocked(target_ip):
-                _active_alert = None
+            # Si Ollama está offline o la inferencia falló
+            if not ai_res.get("ollama_online", False) or not ai_res.get("success", False):
                 return {"has_alert": False}
 
-            _active_alert = {
-                "has_alert": True,
-                "ip": target_ip,
-                "count": recent_count,
-                "auth_errors": recent_auth_errors,
-                "ollama_online": ai_res.get("ollama_online", False),
-                "model": ai_res.get("model", "N/A"),
-                "message": ai_res["reply"],
-                "suggested_action": suggested_action or {
+            suggested_action = ai_res.get("suggested_action")
+            target_ip = detected_ip
+            if suggested_action and suggested_action.get("ip"):
+                target_ip = suggested_action.get("ip")
+
+            if firewall.is_blocked(target_ip):
+                return {"has_alert": False}
+
+            # Si Capa 1 determinó anomalía crítica pero el LLM omitió la sintaxis exacta del botón
+            if not suggested_action and is_suspicious:
+                suggested_action = {
                     "type": "block",
                     "ip": target_ip,
                     "label": f"Aplicar política DROP para {target_ip}"
                 }
+
+            alert_data = {
+                "has_alert": True,
+                "alert_id": f"{target_ip}_{total_requests}_{int(time.time() * 1000)}",
+                "ip": target_ip,
+                "count": recent_count,
+                "auth_errors": recent_auth_errors,
+                "ollama_online": True,
+                "model": ai_res.get("model", "N/A"),
+                "message": ai_res["reply"],
+                "suggested_action": suggested_action
             }
+            _active_alerts_by_ip[target_ip] = alert_data
+            _pending_alert_queue.append(alert_data)
+            return alert_data
         finally:
             _is_analyzing = False
+            _current_analyzing_ip = None
 
-    if _active_alert:
-        return _active_alert
+    if _active_alerts_by_ip:
+        last_ip = list(_active_alerts_by_ip.keys())[-1]
+        return _active_alerts_by_ip[last_ip]
 
     return {"has_alert": False}
 
