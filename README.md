@@ -1,165 +1,164 @@
-# TP4 — Proyecto Integrador + Feria de Redes
+# ChatOps & AIOps: Asistente Conversacional con LLM Local (Ollama) para Monitoreo de Red y Mitigación de Incidentes de Seguridad en Tiempo Real
 
-> **GOYS** — Gestión Operativa y Seguridad en Redes · UTN FR La Plata
-> **Peso:** 60% de la nota del bloque Redes/Operación
-> **Muestra:** Feria de Redes (última clase del bloque)
-
-Este es el **repositorio base del Trabajo Práctico Integrador (TP4)**. Un integrante del grupo lo **forkea**, agrega al resto como **colaboradores**, y todo el trabajo colaborativo del TP4 se hace acá.
-
----
-
-## 1. ¿Qué es el TP4?
-
-El TP4 integra **las 3 áreas de la materia** —**Redes**, **Operación (Gestión)** y **Seguridad**— en un proyecto con mayor autonomía:
-
-| Área | Qué cubre |
-|------|-----------|
-| 🔌 **Redes** | Topología, routing (BGP/OSPF), switching, VXLAN, containers, L2/L3 |
-| ⚙️ **Operación (Gestión)** | Automatización (Ansible), monitoreo (Prometheus/Grafana), orquestación (K3s), GitOps |
-| 🛡️ **Seguridad** | Segmentación, network policies, mTLS, Zero Trust, Cilium/Hubble |
-
-Se muestra al final en una **Feria de Redes** (formato congreso): cada grupo monta una **estación** con póster, documento y demo funcionando, y la defiende frente a docentes, compañeros e invitados.
-
-Cada grupo elige **UNA** de las 3 modalidades (sección 2).
+> **Universidad Tecnológica Nacional — Facultad Regional La Plata**  
+> **Cátedra:** Gestión Operativa y Seguridad en Redes (GOYS)  
+> **Trabajo Práctico N.º 4:** Proyecto Integrador — Feria de Redes  
+> **Modalidad:** A — Proyecto de Desarrollo  
+> **Grupo:** Grupo 6  
 
 ---
 
-## 2. Modalidades (elegir UNA)
+## 👥 Integrantes y Asignación de Roles
 
-| Modalidad | Qué es | Template |
-|-----------|--------|----------|
-| **A — Proyecto de Desarrollo** | Diseñar e implementar una solución que integre redes, containers, automatización y monitoreo | `templates/template-modalidad-a.md` |
-| **B — Artículo de Revisión del Estado del Arte** | Investigar el estado del arte de una tecnología, sus innovaciones emergentes y oportunidades | `templates/template-modalidad-b.md` |
-| **C — Trabajo de Campo** | Analizar una red real (o caso de estudio) y proponer mejoras | `templates/template-modalidad-c.md` |
-
-### ¿Cómo integra cada modalidad las 3 áreas?
-
-| Área | A — Desarrollo | B — Estado del Arte | C — Trabajo de Campo |
-|------|----------------|---------------------|----------------------|
-| 🔌 **Redes** | Topología + routing + containers **implementados** | Estado del arte de una tecnología de red | Relevamiento de la red real |
-| ⚙️ **Operación** | Ansible + monitoreo **automatizados** | Network automation, observabilidad | Propuesta de automatización/monitoreo |
-| 🛡️ **Seguridad** | Network policies, segmentación, mTLS | Zero Trust, eBPF security, mTLS | Segmentación + mejoras de seguridad |
-
-> ⚠️ **La seguridad NO es opcional en ninguna modalidad.** Sin importar cuál elijan, el proyecto debe mostrar cómo aborda la seguridad de la red.
-
-> 📖 El detalle de cada modalidad está en su template. El formato del documento (portada UTN, A4, estilo) está en `templates/template-documento.md`.
+| Integrante | Rol en el Proyecto | Responsabilidad Técnica Principal |
+| :--- | :--- | :--- |
+| **Nicolás Valdés** | Arquitectura & Backend AIOps | Coordinación general, diseño de arquitectura Two-Tier, motor de inferencia local con Ollama y despachador de telemetría |
+| **Franco Pietrantuono** | Infraestructura & Redes | Virtualización en Docker bridge, servidor Nginx con logging enriquecido, patrón Sidecar de red y mitigación en kernel (`iptables`) |
+| **Facundo Otero** | Seguridad & Análisis Forense | Modelado de amenazas L7 (DoS volumétrico y fuerza bruta), sockets dinámicos L3 (`SourceAddressAdapter`) y simulación de tráfico |
+| **Ivan Vijandi** | Operaciones & Monitoreo | Interfaz de usuario ChatOps en tiempo real, observabilidad reactiva, procedimientos operativos y guías de ejecución |
 
 ---
 
-## 3. Arrancar: fork + grupo + colaboradores
+## 📌 Descripción General
 
-### 3.1. Un integrante hace el fork
+En centros de operaciones de red (NOC) y seguridad (SOC), el análisis manual de registros crudos (*logs*) introduce demoras críticas en el tiempo medio de contención (MTTR), mientras que los mecanismos de bloqueo estáticos tradicionales (como Fail2ban) carecen de contexto semántico, derivando en falsos positivos o denegaciones de servicio involuntarias sobre tráfico legítimo.
 
-1. Ese integrante entra a este repositorio y hace **Fork** (botón arriba a la derecha).
-2. Ahora tiene una copia en su cuenta: `tu-usuario/goys-tp4-integrador`.
+Este proyecto implementa una plataforma perimétrica de **ChatOps y AIOps** que unifica el monitoreo y la defensa activa de redes sobre contenedores Docker:
+1. **Operación 100% Offline (On-Premise):** Emplea un modelo de lenguaje compacto (**Llama 3.2 3B**) ejecutado localmente mediante **Ollama**, garantizando privacidad absoluta de los registros corporativos sin fuga de telemetría hacia nubes públicas.
+2. **Arquitectura Two-Tier (Determinista + Semántica):** La Capa 1 procesa estadísticas agregadas a velocidad de línea en Python (conteo de peticiones, códigos HTTP, ratios de concentración y User-Agents), mientras la Capa 2 sintetiza el dictamen forense y la severidad mediante inferencia del LLM en menos de 10 segundos.
+3. **Control Human-in-the-Loop (HITL):** Ninguna regla de firewall es inyectada automáticamente a ciegas; el asistente conversacional expone la evidencia forense al operador y ofrece botones de acción directa para aplicar o revocar reglas `DROP` perimétricas.
+4. **Mitigación a Nivel Kernel (Netfilter):** El servicio ChatOps comparte el namespace de red con el servidor web mediante el patrón **Sidecar**, inyectando políticas perimétricas en la cadena `INPUT`/`DOCKER-USER` de `iptables` antes de que los paquetes hostiles alcancen el socket de la aplicación.
 
-### 3.2. Sumar colaboradores (compañeros + docentes)
+---
 
-1. En el fork, ir a **Settings → Collaborators and teams → Add people**.
-2. Agregar a **cada integrante** del grupo (por su usuario de GitHub).
-3. Agregar también a los **docentes** para que puedan revisar el trabajo:
-   - `ofalabel` — **Osvaldo Falabella** (titular de la materia)
-   - `rodriguezemautn` — **Emanuel Rodríguez** (bloque Redes/Operación)
-4. Cada uno acepta la invitación (llega por mail/notificación).
+## 🌐 Topología de Red Virtualizada
 
-> ⚠️ **Todos los integrantes deben aparecer como colaboradores y con commits propios.** Si alguien no aparece en el historial de git, no acredita el TP.
+La red se despliega de forma autocontenida sobre un bridge virtual de Docker (`goys-net`):
 
-### 3.3. Clonar y configurar identidad
+```text
+                      +---------------------------------------+
+                      |    Docker Bridge Virtual: goys-net    |
+                      |         Subred: 172.20.0.0/24         |
+                      |         Gateway: 172.20.0.1           |
+                      +-------------------+-------------------+
+                                          |
+             +----------------------------+----------------------------+
+             |                                                         |
+             v                                                         v
++---------------------------------------+             +---------------------------------+
+|   goys-nginx-server                   |             |   goys-attacker                 |
+|   IP: 172.20.0.10                     |             |   IP Base: 172.20.0.99          |
+|   Puerto expuesto: 8080 (HTTP)        |             |   Aliases L3: .51-.55, .77, .88 |
+|   Logging: $remote_addr + rt + $http_ua             |   Sockets dinámicos concurrentes|
+|   +---------------------------------+ |             +---------------------------------+
+|   | chatops-app (Sidecar)           | |                              |
+|   | Comparte Network Namespace      | |                              |
+|   | Acceso directo a iptables       | |                              v
+|   | Puerto WebUI: 5000 (FastAPI)    | |             +---------------------------------+
+|   +---------------------------------+ |             |   Tráfico Legítimo / Ataques    |
++---------------------------------------+             |   - DoS Volumétrico (HTTP Flood)|
+                   |                                  |   - Fuerza Bruta y Escaneo L7   |
+                   v                                  |   - 5 Clientes Normales (1 req/s|
++---------------------------------------+             +---------------------------------+
+|   Ollama Local (Host / On-Premise)    |
+|   Endpoint: http://localhost:11434    |
+|   Modelo: llama3.2:3b                 |
++---------------------------------------+
+```
 
+### Tabla de Direccionamiento de Nodos
+
+| Nodo | Contenedor | Dirección IP | Servicios / Puertos |
+| :--- | :--- | :--- | :--- |
+| **Gateway Virtual** | `bridge docker` | `172.20.0.1` | Ruteo inter-redes y gateway por defecto |
+| **Servidor Web** | `goys-nginx` | `172.20.0.10` | Nginx HTTP en puerto 80 (mapeado a `8080`) |
+| **Sidecar ChatOps** | `goys-chatops` | `172.20.0.10` *(shared ns)* | FastAPI / WebUI en puerto `5000`, interfaz iptables |
+| **Nodo Atacante** | `goys-attacker` | `172.20.0.99` | Generador de tráfico L3/L7 y botnet sintética |
+| **Clientes Legítimos** | *(aliases dinámicos)* | `172.20.0.51` - `.55` | Navegación nominal continua con User-Agents comerciales |
+| **Vectores de Ataque** | *(aliases dinámicos)* | `172.20.0.77`, `.88`, `.120` | DoS volumétrico HTTP y escaneo DirBuster |
+
+---
+
+## 🚀 Puesta en Marcha Rápida (Offline Ready)
+
+### 1. Requisitos Previos
+- Docker Desktop en ejecución (con soporte para Linux Containers).
+- Ollama instalado y en ejecución en el host:
+  ```bash
+  ollama run llama3.2:3b
+  ```
+
+### 2. Despliegue de la Infraestructura
+Desde el directorio `demo/`:
 ```bash
-# Cada integrante clona el fork
-git clone https://github.com/<grupo>/goys-tp4-integrador.git
-cd goys-tp4-integrador
+docker compose up -d --build
+```
 
-# Configurar identidad (usar el mail de la facultad)
-git config user.name "Apellido, Nombre"
-git config user.email "tu-email@alumnos.frlp.utn.edu.ar"
+### 3. Acceso a la Consola ChatOps
+Abrir en el navegador web:
+```text
+http://localhost:5000
 ```
 
 ---
 
-## 4. Estructura del repositorio
+## 🛠️ Comandos de Operación en ChatOps
 
+La consola conversacional permite monitorear y mitigar mediante lenguaje natural o comandos directos:
+
+| Comando | Función Operativa |
+| :--- | :--- |
+| `/status` | Estado ICMP de Nginx y Gateway, velocidad de tráfico (req/s) y estado de Ollama |
+| `/top` | Ranking de las 5 direcciones IP con mayor volumen y porcentaje de concentración |
+| `/inspeccionar <IP>` | Perfil forense detallado de un origen: rutas visitadas, User-Agents y códigos HTTP |
+| `/reglas` | Lista de políticas de filtrado perimetral activas en la cadena `DOCKER-USER` |
+| `/bloquear <IP>` | Aplica regla `DROP` inmediata en el firewall de kernel para aislar una IP |
+| `/desbloquear <IP>` | Remueve la regla de firewall y restablece la comunicación con el origen |
+| `/analizar` | Fuerza una inferencia semántica con Ollama sobre la telemetría acumulada |
+| `/reset` | Vacía los registros de acceso de Nginx (a 0) y purga las reglas de firewall |
+
+---
+
+## 🔬 Flujo de Demostración para la Feria de Redes
+
+1. **Línea de Base (Tráfico Legítimo):**
+   ```bash
+   docker exec -it goys-attacker python3 /scripts/background_traffic.py
+   ```
+   *Resultado:* La consola web permanece en `CENTINELA VIGILANDO` (verde) con 0 alertas falsas y latencia < 2 ms.
+
+2. **Detección de Escaneo L7 y Fuerza Bruta:**
+   ```bash
+   docker exec -it goys-attacker python3 /scripts/bruteforce.py --ip 172.20.0.120
+   ```
+   *Resultado:* El centinela detecta rutas críticas (`/admin`, `.env`, `/login`), Ollama clasifica como **Severidad ALTA** y se mitiga con un clic en **"Aplicar política DROP para 172.20.0.120"**.
+
+3. **Detección de Ataque DoS Volumétrico (HTTP Flood):**
+   ```bash
+   docker exec -it goys-attacker python3 /scripts/dos_attack.py --ip 172.20.0.88 --requests 260
+   ```
+   *Resultado:* El centinela clasifica como **Severidad CRÍTICA** (260 peticiones masivas, User-Agent `AttackBot`), permitiendo el descarte perimétrico en kernel mientras los clientes legítimos continúan navegando sin interrupción.
+
+4. **Escenario Multivector Concurrente (DDoS):**
+   Lanzando ataques sucesivos desde IPs diferentes (`.77` y `.88`), el sistema gestiona los incidentes concurrentemente en cola, ofreciendo mitigación granular independiente para cada vector de la botnet.
+
+---
+
+## 📂 Estructura del Repositorio
+
+```text
+├── capturas/                     # Evidencias visuales de la WebUI y mitigación
+├── demo/
+│   ├── app/                      # Microservicio ChatOps & AIOps (FastAPI)
+│   │   ├── core/                 # Motor de IA, parser de telemetría y firewall
+│   │   └── static/               # Interfaz gráfica reactiva (HTML5/CSS3/Vanilla JS)
+│   ├── attacker/                 # Contenedor generador de tráfico y ataques
+│   ├── nginx/                    # Servidor web Nginx con configuración de logs
+│   ├── scripts/                  # Scripts de ataque L3/L7 y tráfico nominal
+│   └── docker-compose.yml        # Orquestación de contenedores y red bridge
+├── diagramas/                    # Diagramas de arquitectura y topología de red
+├── documento/                    # Documento final formal en Markdown y PDF
+├── poster/                       # Plantilla A1 editable y versión lista para imprimir
+├── progreso.md                   # Bitácora de avances y registro de hitos del equipo
+└── README.md                     # Documentación principal del repositorio
 ```
-goys-tp4-integrador/
-├── README.md              # esta guía
-├── progreso.md            # bitácora del grupo (qué hizo cada uno)
-├── templates/             # templates de modalidad + documento + checklist
-├── documento/             # documento final (PDF + fuente)
-├── poster/                # póster A1 (editable + PDF) + guía
-├── demo/                  # código/scripts de la demo (estación)
-├── capturas/              # capturas y evidencias
-└── diagramas/             # diagramas de arquitectura/topología
-```
-
----
-
-## 5. Trabajo colaborativo (cómo laburar en grupo)
-
-### Flujo recomendado (ramas cortas + pull requests)
-
-```bash
-# 1. Actualizar antes de empezar
-git pull origin main
-
-# 2. Rama por tarea
-git checkout -b documento-introduccion
-
-# 3. Trabajar y commitear seguido (mensajes claros)
-git add .
-git commit -m "documento: escribe introducción y objetivos"
-
-# 4. Subir y abrir PR
-git push origin documento-introduccion
-# En GitHub: abrir Pull Request → otro integrante revisa → merge
-
-# 5. Volver a main y repetir
-git checkout main
-git pull origin main
-```
-
-### Reglas de oro
-
-- **Commits de TODOS**: cada integrante commitea con su usuario. Verificar al final con `git log --oneline`.
-- **No pushear directo a `main` sin revisar** (usar PRs para el documento y decisiones grandes).
-- **Pull antes de push** para no pisar trabajo ajeno.
-- **Nada de binarios/secretos**: no subir contraseñas, IPs privadas reales ni archivos pesados (ver `.gitignore`).
-
----
-
-## 6. Entregables (comunes a las 3 modalidades)
-
-| Elemento | Descripción |
-|----------|-------------|
-| 📄 **Documento** | 5-7 págs (modalidades A y B) o 6-8 (C), en PDF, en `documento/` |
-| 🖼️ **Póster A1** | Sintetiza problema, metodología, resultados y conclusiones. Autocontenido. En `poster/` |
-| 💻 **Demo / estación** | Funciona en la laptop del grupo, **offline**. En `demo/` |
-| 📂 **Repositorio** | Documento, fuentes, configs, capturas, póster editable + PDF |
-
-> ✅ Checklist completo en `templates/checklist-entrega.md`. Usarlo antes del ensayo y antes de la Feria.
-
----
-
-## 7. Cronograma
-
-| Momento | Qué pasa |
-|---------|----------|
-| Clase 2 (jueves 20/8) | Se forman los grupos (3-4), los mismos para toda la cursada |
-| Durante la cursada | Cada clase alimenta el TP4; el grupo define modalidad y tema |
-| Jueves 29/10 | Muestra TP3 + preparación/ensayos del TP4 |
-| Jueves 5/11 | **Feria de Redes** — muestra y defensa |
-
----
-
-## 8. Evaluación (60%)
-
-La nota combina **dimensión técnica (60%)** y **"Saber Ser" (40%)** — trabajo en equipo, comunicación, compromiso, pensamiento crítico, ética.
-
-- **Promoción directa:** TP4 >= 6 (con todos los TPs >= 6 y 75% de asistencia).
-- **Cursada regular:** TP4 >= 4 (más el resto de condiciones).
-
-> ⚠️ **Ausencia injustificada en la Feria = TP4 desaprobado.**
-
----
-
-**GOYS — UTN FR La Plata** · Titular: Osvaldo Falabella · Bloque Redes/Operación: Emanuel Rodríguez

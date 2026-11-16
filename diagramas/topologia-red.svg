@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 950 560" width="100%" height="100%" style="background:#0b0f19; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <defs>
+    <linearGradient id="grad-card" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="grad-nginx" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <linearGradient id="grad-chatops" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="grad-attacker" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#dc2626"/>
+      <stop offset="100%" stop-color="#991b1b"/>
+    </linearGradient>
+    <linearGradient id="grad-ollama" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#38bdf8"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#f87171"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#34d399"/>
+    </marker>
+  </defs>
+
+  <!-- TITULO PRINCIPAL -->
+  <text x="475" y="38" text-anchor="middle" fill="#f8fafc" font-size="20" font-weight="700" letter-spacing="0.5">
+    TOPOLOGÍA DE RED VIRTUALIZADA Y ARQUITECTURA CHATOPS / AIOPS
+  </text>
+  <text x="475" y="60" text-anchor="middle" fill="#94a3b8" font-size="13">
+    UTN FR La Plata · GOYS TP4 Proyecto Integrador · Subred Bridge Docker: 172.20.0.0/24
+  </text>
+
+  <!-- CONTENEDOR RED BRIDGE (DOCKER) -->
+  <rect x="30" y="80" width="890" height="340" rx="12" fill="#131d31" stroke="#334155" stroke-dasharray="6 4" stroke-width="1.5"/>
+  <rect x="50" y="70" width="280" height="24" rx="4" fill="#1e293b" stroke="#475569"/>
+  <text x="190" y="86" text-anchor="middle" fill="#38bdf8" font-size="12" font-weight="600">
+    DOCKER BRIDGE NETWORK: goys-net (172.20.0.0/24)
+  </text>
+  <text x="890" y="105" text-anchor="end" fill="#64748b" font-size="11">
+    Gateway Virtual: 172.20.0.1
+  </text>
+
+  <!-- 1. CAJA SERVIDOR COMPARTIDO (SIDECAR PATTERN) -->
+  <rect x="60" y="120" width="450" height="280" rx="10" fill="url(#grad-card)" stroke="#059669" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="60" y="120" width="450" height="32" rx="10" fill="#064e3b"/>
+  <text x="285" y="141" text-anchor="middle" fill="#a7f3d0" font-size="13" font-weight="700">
+    POD / NAMESPACE DE RED COMPARTIDO (172.20.0.10)
+  </text>
+  <text x="75" y="170" fill="#6ee7b7" font-size="11" font-weight="600">
+    Comparten Interfaz eth0 + Tabla de Filtrado Netfilter / iptables
+  </text>
+
+  <!-- NGINX SERVER INTERNO -->
+  <rect x="80" y="185" width="200" height="95" rx="6" fill="#065f46" stroke="#10b981" stroke-width="1.2"/>
+  <text x="180" y="210" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">Nginx Web Server</text>
+  <text x="180" y="228" text-anchor="middle" fill="#a7f3d0" font-size="11">Contenedor: goys-nginx</text>
+  <text x="180" y="246" text-anchor="middle" fill="#e2e8f0" font-size="10.5">Puerto: 80 → Host :8080</text>
+  <text x="180" y="264" text-anchor="middle" fill="#6ee7b7" font-size="10">Logging rt + latencia</text>
+
+  <!-- CHATOPS SIDECAR INTERNO -->
+  <rect x="295" y="185" width="200" height="95" rx="6" fill="#1e3a8a" stroke="#3b82f6" stroke-width="1.2"/>
+  <text x="395" y="210" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">ChatOps &amp; AIOps Engine</text>
+  <text x="395" y="228" text-anchor="middle" fill="#bfdbfe" font-size="11">Contenedor: goys-chatops</text>
+  <text x="395" y="246" text-anchor="middle" fill="#e2e8f0" font-size="10.5">FastAPI WebUI → :5000</text>
+  <text x="395" y="264" text-anchor="middle" fill="#93c5fd" font-size="10">network_mode: service:nginx</text>
+
+  <!-- CAPA KERNEL NETFILTER DOCKER-USER -->
+  <rect x="80" y="295" width="415" height="90" rx="6" fill="#0f172a" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4 2"/>
+  <text x="287" y="318" text-anchor="middle" fill="#f87171" font-size="12" font-weight="700">
+    FIREWALL PERIMETRAL EN KERNEL (iptables / Netfilter)
+  </text>
+  <text x="287" y="338" text-anchor="middle" fill="#cbd5e1" font-size="10.5">
+    Cadena DOCKER-USER / INPUT: Descarte perimétrico a nivel de Socket L3
+  </text>
+  <rect x="95" y="350" width="385" height="24" rx="4" fill="#450a0a"/>
+  <text x="287" y="366" text-anchor="middle" fill="#fca5a5" font-size="10" font-family="monospace">
+    iptables -I INPUT -s &lt;IP_ATACANTE&gt; -j DROP (Sin tocar tráfico legítimo)
+  </text>
+
+  <!-- 2. NODO ATACANTE Y GENERADOR DE TRAFICO -->
+  <rect x="580" y="120" width="320" height="280" rx="10" fill="url(#grad-card)" stroke="#dc2626" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="580" y="120" width="320" height="32" rx="10" fill="#7f1d1d"/>
+  <text x="740" y="141" text-anchor="middle" fill="#fecaca" font-size="13" font-weight="700">
+    NODO GENERADOR / BOTNET (172.20.0.99)
+  </text>
+
+  <!-- CAJAS DE VECTORES -->
+  <rect x="600" y="165" width="280" height="60" rx="6" fill="#1e1e2e" stroke="#ef4444"/>
+  <text x="740" y="185" text-anchor="middle" fill="#f87171" font-size="11.5" font-weight="700">Vectores Hostiles L3/L7</text>
+  <text x="740" y="202" text-anchor="middle" fill="#e2e8f0" font-size="10">DoS HTTP Flood (AttackBot / 172.20.0.88)</text>
+  <text x="740" y="217" text-anchor="middle" fill="#e2e8f0" font-size="10">Fuerza Bruta &amp; Scan DirBuster (172.20.0.120)</text>
+
+  <rect x="600" y="235" width="280" height="60" rx="6" fill="#1e1e2e" stroke="#10b981"/>
+  <text x="740" y="255" text-anchor="middle" fill="#34d399" font-size="11.5" font-weight="700">Tráfico Nominal de Referencia</text>
+  <text x="740" y="272" text-anchor="middle" fill="#e2e8f0" font-size="10">5 Clientes Concurrentes (172.20.0.51 - .55)</text>
+  <text x="740" y="287" text-anchor="middle" fill="#cbd5e1" font-size="10">User-Agents comerciales, ~1 req/s con jitter</text>
+
+  <rect x="600" y="305" width="280" height="80" rx="6" fill="#0f172a" stroke="#475569"/>
+  <text x="740" y="325" text-anchor="middle" fill="#38bdf8" font-size="11" font-weight="700">Sockets Dinámicos L3</text>
+  <text x="740" y="342" text-anchor="middle" fill="#94a3b8" font-size="10">SourceAddressAdapter (requests.Session)</text>
+  <text x="740" y="358" text-anchor="middle" fill="#94a3b8" font-size="10">Multi-IP Aliasing via 'ip addr add dev eth0'</text>
+  <text x="740" y="374" text-anchor="middle" fill="#64748b" font-size="9.5">cap_add: NET_ADMIN en goys-attacker</text>
+
+  <!-- 3. CEREBRO AIOPS OLLAMA (HOST) -->
+  <rect x="250" y="445" width="450" height="95" rx="8" fill="url(#grad-card)" stroke="#f59e0b" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="250" y="445" width="450" height="26" rx="8" fill="#78350f"/>
+  <text x="475" y="463" text-anchor="middle" fill="#fde68a" font-size="12" font-weight="700">
+    MOTOR DE INFERENCIA LOCAL OLLAMA (HOST ON-PREMISE)
+  </text>
+  <text x="475" y="490" text-anchor="middle" fill="#f8fafc" font-size="11.5">
+    Modelo: <tspan fill="#fbbf24" font-weight="700">llama3.2:3b</tspan> · Endpoint: <tspan font-family="monospace">http://localhost:11434</tspan>
+  </text>
+  <text x="475" y="508" text-anchor="middle" fill="#cbd5e1" font-size="10.5">
+    Inferencia offline en &lt; 10s · Dictamen Forense: Incidente, Severidad, Muestras y DROP
+  </text>
+  <text x="475" y="525" text-anchor="middle" fill="#a3e635" font-size="10" font-weight="600">
+    Zero Cloud Leakage · 100% Autónomo sin conexión a Internet
+  </text>
+
+  <!-- LINEAS DE CONEXIÓN Y FLUJO -->
+  <!-- Flujo de Ataque / Trafico de Attacker a Nginx -->
+  <path d="M 600 195 L 285 195" fill="none" stroke="#f87171" stroke-width="2" stroke-dasharray="6 3" marker-end="url(#arrow-red)"/>
+  <text x="545" y="188" text-anchor="middle" fill="#fca5a5" font-size="10" font-weight="700">Ráfaga HTTP</text>
+
+  <path d="M 600 265 L 285 265" fill="none" stroke="#34d399" stroke-width="2" stroke-dasharray="6 3" marker-end="url(#arrow-green)"/>
+  <text x="545" y="258" text-anchor="middle" fill="#6ee7b7" font-size="10" font-weight="700">Tráfico Nominal</text>
+
+  <!-- Enlace ChatOps con Ollama -->
+  <path d="M 395 280 L 395 445" fill="none" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="405" y="420" fill="#fde68a" font-size="10" font-weight="600">POST /api/generate</text>
+
+  <!-- Enlace ChatOps a iptables -->
+  <path d="M 470 280 L 470 295" fill="none" stroke="#ef4444" stroke-width="2" marker-end="url(#arrow-red)"/>
+</svg>

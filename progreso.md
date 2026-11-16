@@ -51,10 +51,15 @@ El proyecto está diseñado para funcionar **100% OFFLINE** en la laptop del gru
 |-------|--------------|-------------|--------|
 | 10/11/2026 | Definición de modalidad (A) y alcance del proyecto | Todos | ✅ Completado |
 | 10/11/2026 | Asignación formal de roles para los 4 integrantes | Todos | ✅ Completado |
-| 10/11/2026 | Envío de propuesta técnica a la cátedra para validación | Grupo 6 | 🟡 En espera de feedback |
+| 10/11/2026 | Envío de propuesta técnica a la cátedra para validación | Grupo 6 | ✅ Completado |
 | 11/11/2026 | Construcción de la topología virtual (`docker-compose.yml`), red bridge (`172.20.0.0/24`), servidor Nginx con logging forense y nodo atacante con scripts L3/L7 | Franco Pietrantuono | ✅ Completado |
 | 11/11/2026 | Desarrollo del backend de ChatOps (FastAPI), parser de telemetría de Nginx, gestor de firewall y comandos operativos (/status, /bloquear, /desbloquear, /reglas) | Nicolás Valdés | ✅ Completado |
 | 11/11/2026 | Integración del motor AIOps con LLM local (Ollama / qwen2.5:1.5b), prompt engineering para análisis forense de logs y flujo interactivo Human-in-the-Loop | Nicolás Valdés | ✅ Completado |
+| 12/11/2026 | Implementación de patrón Sidecar Network (`network_mode: service:nginx-server`) con `NET_ADMIN`, arquitectura Two-Tier AIOps (preprocesamiento determinista + inferencia contextual con Llama 3.2 3B) y consola reactiva WebUI | Franco Pietrantuono & Ivan Vijandi | ✅ Completado |
+| 13/11/2026 | Resolución de concurrencia multi-incidente (cola FIFO, ventana de 300 eventos, deduplicación y filtros léxicos contra loops de Ollama), ensayos de DoS/fuerza bruta multi-IP y verificación de tráfico legítimo aislado | Facundo Otero & Nicolás Valdés | ✅ Completado |
+| 14/11/2026 | Redacción integral del documento técnico (`documento/documento-final.md`), diseño y renderizado de topología SVG (`diagramas/topologia-red.svg`) y actualización de README | Todos | ✅ Completado |
+| 15/11/2026 | Compilación del documento técnico a PDF con maquetación académica y diseño del póster A1 interactivo en HTML | Todos | ✅ Completado |
+| 16/11/2026 | Compilación de póster A1 a PDF alta resolución (`poster/poster-A1.pdf`), organización de capturas de evidencia y validación de checklist de entrega | Todos | ✅ Completado |
 
 ---
 
@@ -66,7 +71,8 @@ El proyecto está diseñado para funcionar **100% OFFLINE** en la laptop del gru
 - [x] Construcción de la topología virtual (`docker-compose.yml`)
 - [x] Implementación del backend ChatOps y telemetría de red
 - [x] Conexión del motor AIOps con la API local de Ollama e interacción Human-in-the-Loop
-- [ ] Visto bueno de la cátedra (@ofalabel / @rodriguezemautn)
-- [ ] Ejecución de escenarios de ataque y captura de evidencias (Fase 5)
-- [ ] Redacción del borrador del documento técnico (5-7 págs) en `documento/`
-- [ ] Maquetación del póster A1 en `poster/`
+- [x] Visto bueno y validación de propuesta técnica
+- [x] Ejecución de escenarios de ataque y captura de evidencias (Fase 5)
+- [x] Redacción del documento técnico final en `documento/`
+- [x] Maquetación y exportación del póster A1 en `poster/`
+- [x] Validación completa contra `templates/checklist-entrega.md`
