@@ -114,7 +114,6 @@ La consola conversacional permite monitorear y mitigar mediante lenguaje natural
 | `/reglas` | Lista de políticas de filtrado perimetral activas en la cadena `DOCKER-USER` |
 | `/bloquear <IP>` | Aplica regla `DROP` inmediata en el firewall de kernel para aislar una IP |
 | `/desbloquear <IP>` | Remueve la regla de firewall y restablece la comunicación con el origen |
-| `/analizar` | Fuerza una inferencia semántica con Ollama sobre la telemetría acumulada |
 | `/reset` | Vacía los registros de acceso de Nginx (a 0) y purga las reglas de firewall |
 
 ---

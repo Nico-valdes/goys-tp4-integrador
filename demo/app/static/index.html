@@ -86,7 +86,6 @@
 
                 <span class="section-label">Acciones Operativas</span>
                 <div class="command-pills">
-                    <button class="btn-cmd" onclick="sendCommand('/analizar')" style="border-color: rgba(96, 165, 250, 0.4); color: #93c5fd;">$ /analizar — Inferencia AIOps</button>
                     <button class="btn-cmd" onclick="sendCommand('/status')">$ /status — Diagnóstico de red</button>
                     <button class="btn-cmd" onclick="sendCommand('/reglas')">$ /reglas — Políticas activas</button>
                     <button class="btn-cmd" onclick="sendCommand('/logs')">$ /logs — Últimos registros</button>
@@ -121,7 +120,7 @@
 
             <div class="chat-input-wrapper">
                 <form id="chat-form" class="chat-form" onsubmit="handleUserSubmit(event)">
-                    <input type="text" id="user-input" class="chat-input" placeholder="Escribí un comando o consulta (/status, /analizar, /reset)..." autocomplete="off">
+                    <input type="text" id="user-input" class="chat-input" placeholder="Escribí un comando o consulta (/status, /reglas, /reset)..." autocomplete="off">
                     <button type="submit" class="btn-send">Ejecutar</button>
                 </form>
             </div>

@@ -22,8 +22,7 @@ def process_command(message: str) -> dict:
             "- `/reglas`: Lista las políticas de filtrado activas en la cadena `DOCKER-USER`.\n"
             "- `/bloquear <IP>`: Aplica una regla DROP perimetral para aislar una IP.\n"
             "- `/desbloquear <IP>`: Remueve la regla de firewall y restablece la comunicación.\n\n"
-            "● **Control de Laboratorio & AIOps:**\n"
-            "- `/analizar`: Inferencia semántica con el LLM local para clasificar incidentes.\n"
+            "● **Control de Laboratorio:**\n"
             "- `/reset`: Vacía los logs de Nginx y limpia el firewall para reiniciar ensayos.\n\n"
             "● **Consultas Conversacionales:**\n"
             "Podés preguntar libremente sobre redes o el sistema (ej. *'¿Hay algún ataque activo?'*, *'¿Cómo funciona iptables en Docker?'*, *'¿Por qué 172.20.0.50 no fue bloqueada?'*)."
@@ -143,29 +142,24 @@ def process_command(message: str) -> dict:
             reply += f"`{l['ip']}` → `{l['request']}` [{l['status']}] ({l['user_agent']})\n"
         return {"reply": reply, "action": "logs", "data": recent_logs, "suggested_action": None}
 
-    # 10. Decisión de Inferencia: Análisis de Seguridad AIOps vs Consulta Conversacional
-    analysis_keywords = ["/analizar", "analizar", "analiza", "ataque", "amenaza", "incidente", "forense", "tráfico", "trafico", "seguridad", "reporte"]
-    is_analysis_request = any(k in text.lower() for k in analysis_keywords)
+    # 10. Comando /analizar informativo
+    if text in ["/analizar"]:
+        reply = (
+            "El análisis forense opera de forma proactiva y automática mediante el **Centinela AIOps** en tiempo real. "
+            "Cuando se detectan ráfagas o patrones anómalos en la red, el sistema genera la alerta automáticamente con el dictamen de la IA y el botón de mitigación."
+        )
+        return {"reply": reply, "action": "info", "data": None, "suggested_action": None}
 
-    if is_analysis_request:
-        ai_result = ai_engine.analyze_traffic_with_ollama(prompt_custom=text)
-        return {
-            "reply": ai_result["reply"],
-            "action": "ai_analysis",
-            "data": {"model": ai_result.get("model")},
-            "suggested_action": ai_result.get("suggested_action")
-        }
-    else:
-        # Contexto en vivo para enriquecer la respuesta del asistente
-        rules = firewall.list_rules()
-        blocked_ips = [r["ip"] for r in rules]
-        metrics = telemetry.get_traffic_metrics(1000)
-        context_str = f"- Total requests en buffer: {metrics['total_requests']}\n- IPs bloqueadas actualmente en firewall: {', '.join(blocked_ips) or 'Ninguna'}\n- Top IPs activas: {', '.join([item['ip'] for item in metrics['top_ips'][:3]]) or 'Sin tráfico'}"
-        
-        chat_res = ai_engine.chat_with_assistant(text, context=context_str)
-        return {
-            "reply": chat_res["reply"],
-            "action": "chat",
-            "data": None,
-            "suggested_action": None
-        }
+    # 11. Consulta Conversacional General (ChatOps Asistente)
+    rules = firewall.list_rules()
+    blocked_ips = [r["ip"] for r in rules]
+    metrics = telemetry.get_traffic_metrics(1000)
+    context_str = f"- Total requests en buffer: {metrics['total_requests']}\n- IPs bloqueadas actualmente en firewall: {', '.join(blocked_ips) or 'Ninguna'}\n- Top IPs activas: {', '.join([item['ip'] for item in metrics['top_ips'][:3]]) or 'Sin tráfico'}"
+    
+    chat_res = ai_engine.chat_with_assistant(text, context=context_str)
+    return {
+        "reply": chat_res["reply"],
+        "action": "chat",
+        "data": None,
+        "suggested_action": None
+    }
