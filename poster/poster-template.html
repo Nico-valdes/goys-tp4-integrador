@@ -3,26 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Póster A1 — GOYS 2026</title>
+  <title>Póster A1 — ChatOps & AIOps (GOYS 2026)</title>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --primary: #1a365d;
-      --primary-light: #2b6cb0;
-      --accent: #3182ce;
-      --bg-section: #f7fafc;
-      --bg-card: #ffffff;
-      --text: #2d3748;
-      --text-light: #718096;
-      --border: #e2e8f0;
-      --shadow: 0 2px 8px rgba(0,0,0,0.06);
+      --primary: #0f172a;
+      --primary-light: #1e3a8a;
+      --accent: #0284c7;
+      --accent-light: #38bdf8;
+      --success: #16a34a;
+      --danger: #dc2626;
+      --bg-page: #f1f5f9;
+      --bg-section: #ffffff;
+      --bg-card: #f8fafc;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #cbd5e1;
+      --shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
     }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif;
       color: var(--text);
-      line-height: 1.5;
+      background: var(--bg-page);
+      line-height: 1.45;
     }
 
     @page {
@@ -31,334 +36,610 @@
     }
 
     @media print {
-      body { margin: 0; padding: 0; }
+      body { margin: 0; padding: 0; background: #ffffff; }
       .poster { box-shadow: none; border-radius: 0; }
-      .placeholder { border: 1px dashed var(--border); background: #fdfdfd; }
     }
 
     .poster {
       width: 594mm;
       height: 841mm;
-      display: grid;
-      grid-template-rows: auto 1fr auto;
-      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
       background: #ffffff;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.1);
-      border-radius: 4px;
+      overflow: hidden;
     }
 
     /* ── HEADER ── */
     .header {
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      background: linear-gradient(135deg, #0b1120 0%, #1e3a8a 60%, #0369a1 100%);
       color: #ffffff;
-      padding: 32mm 36mm 24mm;
+      padding: 24mm 32mm 20mm;
       text-align: center;
+      border-bottom: 5px solid var(--accent-light);
+    }
+
+    .header .pre-title {
+      font-size: 19pt;
+      font-weight: 500;
+      letter-spacing: 2pt;
+      text-transform: uppercase;
+      color: var(--accent-light);
+      margin-bottom: 4mm;
     }
 
     .header h1 {
-      font-size: 22pt;
-      font-weight: 400;
-      letter-spacing: 1pt;
-      text-transform: uppercase;
+      font-size: 38pt;
+      font-weight: 800;
+      line-height: 1.22;
       margin-bottom: 6mm;
-      opacity: 0.9;
+      letter-spacing: -0.5pt;
     }
 
-    .header h2 {
-      font-size: 48pt;
-      font-weight: 700;
-      line-height: 1.2;
-      margin-bottom: 8mm;
+    .header .subtitle {
+      font-size: 21pt;
+      font-weight: 400;
+      color: #e2e8f0;
+      margin-bottom: 6mm;
+      max-width: 90%;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .header .group-info {
-      font-size: 26pt;
-      font-weight: 300;
-      opacity: 0.85;
+      font-size: 20pt;
+      font-weight: 400;
+      color: #f8fafc;
+      background: rgba(255, 255, 255, 0.12);
+      display: inline-block;
+      padding: 3mm 12mm;
+      border-radius: 20mm;
+      border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
     .header .group-info strong {
-      font-weight: 600;
-      opacity: 1;
+      color: #ffffff;
+      font-weight: 700;
     }
 
     /* ── CONTENT GRID ── */
     .content {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: auto auto auto;
-      gap: 8mm;
-      padding: 12mm 36mm;
+      padding: 10mm 26mm;
+      display: flex;
+      flex-direction: column;
+      gap: 7mm;
       flex: 1;
     }
 
     .section {
       background: var(--bg-section);
-      border-radius: 6mm;
-      padding: 10mm 12mm;
+      border-radius: 5mm;
+      padding: 7mm 9mm;
+      border: 1.5px solid var(--border);
       box-shadow: var(--shadow);
-      border: 1px solid var(--border);
     }
 
-    .section h3 {
-      font-size: 28pt;
-      font-weight: 700;
-      color: var(--primary);
-      margin-bottom: 6mm;
-      padding-bottom: 3mm;
+    .section-title {
+      font-size: 23pt;
+      font-weight: 800;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 3mm;
+      margin-bottom: 4mm;
+      padding-bottom: 2.5mm;
       border-bottom: 3px solid var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.5pt;
     }
 
     .section p {
-      font-size: 20pt;
-      line-height: 1.6;
-      color: var(--text);
+      font-size: 15.5pt;
+      line-height: 1.5;
+      color: #334155;
     }
 
-    .section ul {
-      font-size: 20pt;
-      padding-left: 8mm;
-      margin-top: 3mm;
+    /* ── INTRO BANNER (3 PILLARS) ── */
+    .intro-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 5mm;
+      margin-top: 2mm;
     }
 
-    .section ul li {
+    .intro-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 5px solid var(--accent);
+      border-radius: 3mm;
+      padding: 4.5mm 6mm;
+    }
+
+    .intro-card h4 {
+      font-size: 17pt;
+      font-weight: 700;
+      color: #0f172a;
       margin-bottom: 2mm;
     }
 
-    /* ── FULL-WIDTH SECTIONS ── */
-    .section-full {
-      grid-column: 1 / -1;
+    .intro-card p {
+      font-size: 14pt;
+      color: #475569;
+      line-height: 1.45;
     }
 
-    /* ── PLACEHOLDERS ── */
-    .placeholder {
-      background: #edf2f7;
-      border: 2px dashed var(--border);
+    /* ── MIDDLE SPLIT (2 COLUMNS) ── */
+    .columns-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 7mm;
+    }
+
+    /* ── DIAGRAM BLOCK ── */
+    .diagram-container {
+      background: #0b0f19;
       border-radius: 4mm;
+      padding: 3mm;
+      border: 1px solid #1e293b;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 3mm;
+    }
+
+    .diagram-container img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 2mm;
+    }
+
+    /* ── METHODOLOGY / TWO-TIER ── */
+    .tier-box {
+      background: var(--bg-card);
+      border-radius: 3mm;
+      border: 1px solid var(--border);
+      padding: 4mm 5mm;
+      margin-bottom: 3.5mm;
+    }
+
+    .tier-box.tier-1 { border-left: 5px solid #059669; }
+    .tier-box.tier-2 { border-left: 5px solid #2563eb; }
+    .tier-box.tier-3 { border-left: 5px solid #dc2626; }
+
+    .tier-box h4 {
+      font-size: 16pt;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 1.5mm;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .tier-box .badge {
+      font-size: 11pt;
+      font-weight: 600;
+      padding: 0.8mm 3mm;
+      border-radius: 2mm;
+      color: #ffffff;
+      text-transform: uppercase;
+    }
+
+    .badge-green { background: #059669; }
+    .badge-blue { background: #2563eb; }
+    .badge-red { background: #dc2626; }
+
+    .tier-box p {
+      font-size: 13.5pt;
+      color: #475569;
+      line-height: 1.4;
+    }
+
+    /* ── RESULTS SECTION ── */
+    .metrics-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4mm;
+      margin-bottom: 5mm;
+    }
+
+    .metric-card {
+      background: #0f172a;
+      color: #ffffff;
+      border-radius: 3mm;
+      padding: 4mm;
+      text-align: center;
+      border: 1px solid #334155;
+    }
+
+    .metric-value {
+      font-size: 26pt;
+      font-weight: 800;
+      color: #38bdf8;
+      line-height: 1.1;
+      margin-bottom: 1mm;
+    }
+
+    .metric-label {
+      font-size: 12.5pt;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5pt;
+    }
+
+    .metric-sub {
+      font-size: 11pt;
+      color: #cbd5e1;
+      margin-top: 1mm;
+    }
+
+    .results-split {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 5mm;
+      align-items: stretch;
+    }
+
+    .evidence-terminal {
+      background: #0b0f19;
+      color: #f8fafc;
+      border-radius: 3mm;
+      border: 1px solid #1e293b;
+      display: flex;
+      flex-direction: column;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+      overflow: hidden;
+    }
+
+    .term-header {
+      background: #1e293b;
+      padding: 2.5mm 4mm;
       display: flex;
       align-items: center;
-      justify-content: center;
-      min-height: 80mm;
-      font-size: 22pt;
-      color: var(--text-light);
-      text-align: center;
-      padding: 6mm;
-      margin-top: 4mm;
+      gap: 2mm;
+      border-bottom: 1px solid #334155;
     }
 
-    .placeholder-sm {
-      min-height: 50mm;
+    .term-dot {
+      width: 3.5mm;
+      height: 3.5mm;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .dot-red { background: #ef4444; }
+    .dot-yellow { background: #eab308; }
+    .dot-green { background: #22c55e; }
+
+    .term-title {
+      font-size: 11pt;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-left: 2mm;
+      font-family: monospace;
     }
 
-    .placeholder-label {
-      font-style: italic;
+    .term-body {
+      padding: 4mm 5mm;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 11.5pt;
+      line-height: 1.45;
+      display: flex;
+      flex-direction: column;
+      gap: 2.5mm;
     }
 
-    .placeholder-icon {
-      font-size: 48pt;
-      margin-bottom: 3mm;
+    .term-badge-crit {
+      background: #991b1b;
+      color: #fef2f2;
+      display: inline-block;
+      align-self: flex-start;
+      font-size: 10.5pt;
+      font-weight: 700;
+      padding: 0.8mm 3mm;
+      border-radius: 1.5mm;
+      border: 1px solid #f87171;
+      letter-spacing: 0.5pt;
     }
 
-    /* ── INTRO (full width at top) ── */
-    .intro { grid-column: 1 / -1; }
-
-    /* ── DIAGRAM left, METHODOLOGY right ── */
-    .diagram { grid-column: 1 / 2; }
-    .methodology { grid-column: 2 / 3; }
-
-    /* ── RESULTS full width ── */
-    .results { grid-column: 1 / -1; }
-
-    /* ── TWO-COLUMN RESULTS ── */
-    .results-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6mm;
-      margin-top: 4mm;
+    .term-meta {
+      color: #e2e8f0;
+      font-size: 11pt;
     }
 
-    .result-item {
+    .term-meta code {
+      color: #f87171;
+      background: rgba(239, 68, 68, 0.15);
+      padding: 0.5mm 1.5mm;
+      border-radius: 1mm;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .term-report {
+      background: rgba(15, 23, 42, 0.8);
+      border-left: 3px solid #38bdf8;
+      padding: 2.5mm 3.5mm;
+      border-radius: 1.5mm;
+      color: #cbd5e1;
+      font-size: 10.5pt;
+    }
+
+    .term-action-row {
+      display: flex;
+      align-items: center;
+      gap: 3mm;
+      margin-top: 1mm;
+    }
+
+    .term-btn-action {
+      background: #15803d;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 11pt;
+      padding: 1.5mm 4mm;
+      border-radius: 2mm;
+      border: 1px solid #4ade80;
+    }
+
+    .term-hitl-tag {
+      color: #94a3b8;
+      font-size: 10.5pt;
+    }
+
+    .term-kernel-log {
+      background: #020617;
+      border: 1px dashed #334155;
+      padding: 2mm 3mm;
+      border-radius: 1.5mm;
+      font-size: 10pt;
+      color: #4ade80;
+    }
+
+    .findings-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 2.5mm;
+      justify-content: space-between;
+    }
+
+    .findings-list li {
       background: var(--bg-card);
-      border-radius: 4mm;
-      padding: 6mm;
       border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      padding: 3mm 4mm;
+      border-radius: 2mm;
+      font-size: 13pt;
+      line-height: 1.35;
+      color: #334155;
     }
 
-    .result-item h4 {
-      font-size: 22pt;
-      color: var(--primary);
-      margin-bottom: 3mm;
+    .findings-list li strong {
+      color: #0f172a;
     }
 
     /* ── FOOTER ── */
     .footer {
-      background: var(--primary);
+      background: #0b1120;
       color: #ffffff;
-      padding: 10mm 36mm;
+      padding: 8mm 26mm;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      font-size: 18pt;
+      border-top: 4px solid var(--accent);
     }
 
-    .footer .qr-placeholder {
-      width: 40mm;
-      height: 40mm;
+    .footer-left {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5mm;
+    }
+
+    .footer-left .institution {
+      font-size: 16pt;
+      font-weight: 700;
+      color: #f8fafc;
+      letter-spacing: 0.5pt;
+    }
+
+    .footer-left .meta {
+      font-size: 13pt;
+      color: #94a3b8;
+    }
+
+    .footer-left .repo-link {
+      font-size: 13pt;
+      color: #38bdf8;
+      font-family: monospace;
+      font-weight: 600;
+    }
+
+    .footer-right {
+      display: flex;
+      align-items: center;
+      gap: 6mm;
+    }
+
+    .qr-container {
       background: #ffffff;
-      border-radius: 3mm;
+      padding: 2mm;
+      border-radius: 2.5mm;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 10pt;
-      color: var(--text-light);
-      text-align: center;
-      padding: 2mm;
-      flex-shrink: 0;
+      width: 25mm;
+      height: 25mm;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
 
-    .footer .info {
-      display: flex;
-      flex-direction: column;
-      gap: 1mm;
+    .qr-container img {
+      width: 100%;
+      height: 100%;
     }
 
-    .footer .info a {
-      color: #90cdf4;
-      text-decoration: none;
-    }
-
-    .footer .info a:hover {
-      text-decoration: underline;
-    }
-
-    /* ── REPONSIVE (screen preview) ── */
-    @media screen and (max-width: 1200px) {
-      body { padding: 12px; }
-      .poster {
-        width: 100%;
-        height: auto;
-        min-height: 900px;
-      }
-      .header { padding: 24px 28px 18px; }
-      .header h1 { font-size: 14px; }
-      .header h2 { font-size: 28px; }
-      .header .group-info { font-size: 16px; }
-      .content {
-        padding: 12px 20px;
-        gap: 12px;
-        grid-template-columns: 1fr;
-      }
-      .content .section { grid-column: 1 !important; }
-      .section h3 { font-size: 18px; }
-      .section p, .section ul { font-size: 14px; }
-      .placeholder { min-height: 60px; font-size: 14px; }
-      .results-grid { grid-template-columns: 1fr; }
-      .footer { padding: 12px 20px; font-size: 12px; flex-wrap: wrap; gap: 12px; }
-      .footer .qr-placeholder { width: 60px; height: 60px; }
+    .qr-caption {
+      font-size: 12pt;
+      color: #cbd5e1;
+      text-align: right;
+      line-height: 1.3;
     }
   </style>
 </head>
 <body>
   <div class="poster">
-    <!-- ══════════ HEADER ══════════ -->
-    <div class="header">
-      <h1>GOYS 2026 — Redes, Gestión y Operación</h1>
-      <h2>Título del proyecto</h2>
-      <p class="group-info">
-        Grupo <strong>[nombre del grupo]</strong> &mdash;
-        <strong>[Apellido, Nombre]</strong> &middot;
-        <strong>[Apellido, Nombre]</strong> &middot;
-        <strong>[Apellido, Nombre]</strong>
-      </p>
-    </div>
 
-    <!-- ══════════ CONTENT ══════════ -->
-    <div class="content">
-      <!-- Introducción / Objetivos — full width -->
-      <div class="section intro">
-        <h3>Introducción y Objetivos</h3>
-        <p>
-          <strong>Problema:</strong> [Describí en 2-3 líneas el problema que resuelve tu proyecto.]
-        </p>
-        <p>
-          <strong>Objetivo:</strong> [Qué se propuso el grupo, cuál es el alcance del trabajo.]
-        </p>
-        <p>
-          <strong>Contexto:</strong> [Materia, tecnología principal, ámbito de aplicación.]
-        </p>
+    <!-- ══════════ ENCABEZADO INSTITUCIONAL ══════════ -->
+    <header class="header">
+      <div class="pre-title">Universidad Tecnológica Nacional &middot; Facultad Regional La Plata &middot; GOYS 2026</div>
+      <h1>ChatOps &amp; AIOps: Monitoreo de Red y Mitigación de Incidentes en Tiempo Real</h1>
+      <p class="subtitle">Asistente conversacional con LLM on-premise (Ollama), análisis semántico de telemetría L3-L7 y mitigación perimetral Human-in-the-Loop 100% offline</p>
+      <div class="group-info">
+        Modalidad A &mdash; <strong>Grupo 6</strong>:
+        <strong>Nicolás Valdés</strong> (Arquitectura &amp; Backend) &middot;
+        <strong>Franco Pietrantuono</strong> (Infraestructura &amp; Redes) &middot;
+        <strong>Facundo Otero</strong> (Seguridad &amp; Análisis) &middot;
+        <strong>Ivan Vijandi</strong> (Operaciones &amp; UI)
+      </div>
+    </header>
+
+    <!-- ══════════ CONTENIDO PRINCIPAL ══════════ -->
+    <main class="content">
+
+      <!-- SECCIÓN 1: INTRODUCCIÓN Y PROBLEMA -->
+      <section class="section">
+        <h2 class="section-title">Contexto, Problemática y Enfoque de Solución</h2>
+        <div class="intro-grid">
+          <div class="intro-card">
+            <h4>El Desafío Operativo</h4>
+            <p>La saturación de logs crudos y telemetría en centros de operaciones (NOC/SOC) retrasa el tiempo de respuesta (MTTR). Los filtros estáticos tradicionales (como Fail2ban) carecen de contexto semántico, provocando falsos positivos y aislamiento de tráfico legítimo.</p>
+          </div>
+          <div class="intro-card">
+            <h4>Propuesta ChatOps &amp; AIOps</h4>
+            <p>Implementación de una plataforma en contenedores que centraliza métricas de red, clasifica incidentes mediante un Modelo de Lenguaje local (Llama 3.2 3B en Ollama) y permite mitigar amenazas en el kernel Linux sin abandonar la consola conversacional.</p>
+          </div>
+          <div class="intro-card">
+            <h4>Garantía 100% Offline</h4>
+            <p>Arquitectura on-premise estricta: cero dependencias externas o APIs en la nube. Privacidad total de direcciones IP y registros de auditoría corporativos, garantizando robustez y operatividad total durante la demostración en la Feria de Redes.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 2: ARQUITECTURA + METODOLOGÍA (2 COLUMNAS) -->
+      <div class="columns-grid">
+
+        <!-- COLUMNA IZQUIERDA: TOPOLOGÍA VIRTUAL -->
+        <section class="section">
+          <h2 class="section-title">Topología de Red Virtualizada</h2>
+          <p>Despliegue sobre Docker Bridge (<code>172.20.0.0/24</code>) utilizando el patrón <strong>Sidecar Network</strong>: el asistente ChatOps comparte el stack de red y privilegios <code>NET_ADMIN</code> del servidor web, inyectando políticas de firewall en la cadena <code>DOCKER-USER</code> de Netfilter.</p>
+          <div class="diagram-container">
+            <img src="../diagramas/topologia-red.svg" alt="Topología de Red y Arquitectura de Servicios">
+          </div>
+        </section>
+
+        <!-- COLUMNA DERECHA: PIPELINE TWO-TIER AIOPS -->
+        <section class="section">
+          <h2 class="section-title">Metodología Two-Tier AIOps</h2>
+          
+          <div class="tier-box tier-1">
+            <h4>Tier 1: Preprocesamiento Heurístico <span class="badge badge-green">&lt; 1 ms</span></h4>
+            <p>Ingesta de logs en streaming sobre ventana deslizante de 300 eventos. Agregación volumétrica por IP, frecuencias HTTP y tasa de concentración sin sobrecargar el contexto de la IA.</p>
+          </div>
+
+          <div class="tier-box tier-2">
+            <h4>Tier 2: Inferencia Semántica (Ollama) <span class="badge badge-blue">~3.8 s</span></h4>
+            <p>Modelo Llama 3.2 3B guiado por In-Context Learning y taxonomía CVSS. Correlaciona User-Agents maliciosos con rutas sensibles, clasificando el vector y determinando el nivel de riesgo.</p>
+          </div>
+
+          <div class="tier-box tier-3">
+            <h4>Mitigación Human-in-the-Loop <span class="badge badge-red">&lt; 8 ms</span></h4>
+            <p>La IA no ejecuta bloqueos a ciegas: propone un dictamen estructurado y un botón de aprobación rápida. El operador valida y el kernel aplica <code>iptables DROP</code> instantáneo.</p>
+          </div>
+        </section>
+
       </div>
 
-      <!-- Diagrama / Arquitectura — left column -->
-      <div class="section diagram">
-        <h3>Arquitectura de Red</h3>
-        <div class="placeholder">
-          <div>
-            <div class="placeholder-icon">🌐</div>
-            <div class="placeholder-label">Diagrama de red</div>
-            <div style="font-size:16pt; margin-top:2mm;">
-              Reemplazá esto con tu topología<br>
-              (Draw.io / Excalidraw / screenshot)
+      <!-- SECCIÓN 3: RESULTADOS EMPÍRICOS Y EVIDENCIAS -->
+      <section class="section">
+        <h2 class="section-title">Resultados de Laboratorio y Mitigación en Bucle Cerrado</h2>
+
+        <div class="metrics-bar">
+          <div class="metric-card">
+            <div class="metric-value">3.8 s</div>
+            <div class="metric-label">Inferencia IA (Local)</div>
+            <div class="metric-sub">Llama 3.2 3B en Ollama</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">&lt; 8 ms</div>
+            <div class="metric-label">Inyección en Kernel</div>
+            <div class="metric-sub">iptables DOCKER-USER</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">100%</div>
+            <div class="metric-label">Efectividad de Bloqueo</div>
+            <div class="metric-sub">260/260 paquetes descartados</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">0%</div>
+            <div class="metric-label">Falsos Positivos</div>
+            <div class="metric-sub">5 clientes legítimos sin corte</div>
+          </div>
+        </div>
+
+        <div class="results-split">
+          <div class="evidence-terminal">
+            <div class="term-header">
+              <span class="term-dot dot-red"></span>
+              <span class="term-dot dot-yellow"></span>
+              <span class="term-dot dot-green"></span>
+              <span class="term-title">AIOps Sentinel &mdash; Registro Forense &amp; Mitigaci&oacute;n en Tiempo Real</span>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Metodología / Herramientas — right column -->
-      <div class="section methodology">
-        <h3>Metodología y Herramientas</h3>
-        <ul>
-          <li><strong>Simulación / Laboratorio:</strong> [GNS3, Eve-NG, físicos, etc.]</li>
-          <li><strong>Tecnologías:</strong> [Docker, K3s, VXLAN, BGP, Ansible, etc.]</li>
-          <li><strong>Herramientas de verificación:</strong> [ping, traceroute, Wireshark, iperf, etc.]</li>
-          <li><strong>Proceso:</strong> [Resumen de cómo trabajaron — diseño, implementación, prueba]</li>
-        </ul>
-        <div class="placeholder placeholder-sm" style="margin-top:6mm;">
-          <div>
-            <div class="placeholder-icon">⚙️</div>
-            <div class="placeholder-label">Captura de laboratorio funcionando</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Resultados — full width -->
-      <div class="section results">
-        <h3>Resultados</h3>
-        <p style="margin-bottom:4mm;">
-          [Resumen de los hallazgos principales. Qué funcionó, qué métricas se obtuvieron,
-          comparativas si las hay.]
-        </p>
-        <div class="results-grid">
-          <div class="result-item">
-            <h4>📊 Capturas / Tablas</h4>
-            <div class="placeholder placeholder-sm">
-              <div>
-                <div class="placeholder-label">Captura Wireshark / iperf / tabla de resultados</div>
+            <div class="term-body">
+              <div class="term-badge-crit">SEVERIDAD CR&Iacute;TICA &middot; R&Aacute;FAGA ACTIVA</div>
+              <div class="term-meta"><strong>Origen:</strong> IP 172.20.0.99 &middot; <strong>Concentraci&oacute;n:</strong> 96.7% (260 reqs / 0.29s)</div>
+              <div class="term-meta"><strong>User-Agent:</strong> <code>AttackBot/1.0 (+http://malicious.org/bot)</code></div>
+              <div class="term-report">
+                <strong>Dictamen LLM (Llama 3.2 3B &middot; 3810 ms):</strong><br>
+                Patr&oacute;n an&oacute;malo volum&eacute;trico caracter&iacute;stico de ataque DoS L7 sobre endpoint ra&iacute;z (/). Concentraci&oacute;n masiva con alta tasa de r&aacute;faga y ausencia de diversidad de rutas. Riesgo de degradaci&oacute;n inminente en Nginx.
+              </div>
+              <div class="term-action-row">
+                <span class="term-btn-action">&#x2714; MITIGACI&Oacute;N DROP APLICADA</span>
+                <span class="term-hitl-tag">[Operador Human-in-the-Loop]</span>
+              </div>
+              <div class="term-kernel-log">
+                [Netfilter] iptables -I DOCKER-USER -s 172.20.0.99 -j DROP<br>
+                [Kernel Sentinel] 260/260 paquetes descartados (0 ms overhead en Nginx).
               </div>
             </div>
           </div>
-          <div class="result-item">
-            <h4>📈 Métricas</h4>
-            <div class="placeholder placeholder-sm">
-              <div>
-                <div class="placeholder-label">Gráfico de throughput / latencia / convergencia</div>
-              </div>
-            </div>
-          </div>
+          <ul class="findings-list">
+            <li><strong>Contención DoS Volumétrico:</strong> Ráfagas de 260 peticiones concurrentes desde nodo atacante (<code>172.20.0.99</code>) detectadas y neutralizadas en el kernel; el atacante pasa a estado TIMEOUT inmediato.</li>
+            <li><strong>Detección de Escaneo / Fuerza Bruta:</strong> Identificación precisa de barridos con herramientas automatizadas hacia endpoints críticos (<code>/admin</code>, <code>/.env</code>) mediante análisis semántico del User-Agent.</li>
+            <li><strong>Preservación de Tráfico Legítimo:</strong> Mientras se aplicaban bloqueos a IPs hostiles, el script de tráfico benigno con 5 clientes concurrentes (<code>172.20.0.51</code> - <code>.55</code>) mantuvo 100% de respuestas 200 OK y latencia &lt; 2 ms.</li>
+            <li><strong>Resiliencia contra Auto-DoS:</strong> Lista blanca estricta (gateway <code>172.20.0.1</code> y servidor <code>172.20.0.10</code>) que impide aislar componentes vitales ante intentos de IP Spoofing.</li>
+          </ul>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ══════════ PIE INSTITUCIONAL ══════════ -->
+    <footer class="footer">
+      <div class="footer-left">
+        <div class="institution">UTN &mdash; Facultad Regional La Plata &middot; Departamento de Ingeniería en Sistemas de Información</div>
+        <div class="meta">Cátedra: Gestión Operativa y Seguridad en Redes &middot; Trabajo Práctico Integrador (Feria de Redes) &middot; Noviembre 2026</div>
+        <div class="repo-link">github.com/Facultad-FRLaPlata/goys-integrador</div>
+      </div>
+      <div class="footer-right">
+        <div class="qr-caption">
+          Escanear para acceder al<br>
+          <strong>código y documentación</strong>
+        </div>
+        <div class="qr-container">
+          <img src="qr-repo.svg" alt="Código QR al Repositorio">
         </div>
       </div>
-    </div>
+    </footer>
 
-    <!-- ══════════ FOOTER ══════════ -->
-    <div class="footer">
-      <div class="info">
-        <span><strong>GOYS 2026</strong> — Universidad Tecnológica Nacional</span>
-        <span>Repositorio: <a href="#">github.com/[org]/[proyecto]</a></span>
-        <span>📧 [mail del grupo] &middot; 📄 Documento completo en el repo</span>
-      </div>
-      <div class="qr-placeholder">
-        QR al<br>repositorio
-      </div>
-    </div>
   </div>
 </body>
 </html>
